@@ -1383,6 +1383,9 @@ html, body {
 }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 .board-layer[hidden] { display: none; }
+/* 榜单本身：不是「出现在遮罩上」，是从 10px 下浮上来、略微放大定住 ——
+   跟 .reveal-plate 的 plateIn 是同一套语汇（浮起 + 定住），
+   但排行榜是「看一眼就关」的工具，分量比解锁牌轻一档（更小位移、更快）。 */
 .board-sheet {
   width: min(52%, 560px);
   max-height: 72%;
@@ -1394,6 +1397,11 @@ html, body {
     inset 0 0 0 4px rgba(196, 163, 106, .2),
     0 24px 70px rgba(0, 0, 0, .55);
   padding: 18px 20px;
+  animation: boardIn .32s var(--ease) both;
+}
+@keyframes boardIn {
+  from { transform: translateY(10px) scale(.98); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
 }
 .board-head {
   display: flex;
@@ -2466,6 +2474,10 @@ html, body {
   .stamp::after { animation: none !important; }
   .finale-chop { animation: chopFade .3s ease-out 1.2s both !important; }
   .stage.quake, .stage.quake-big { animation: none !important; }
+  /* 无限循环的动画被上面通配压成 .01ms infinite 就是一顿高频闪，必须显式禁掉 */
+  .stage.listening .heard,
+  .stage.listening .mic .rings,
+  .motes i { animation: none !important; }
 }
 @keyframes stampFade {
   from { opacity: 0; }
