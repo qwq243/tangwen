@@ -14,6 +14,28 @@
   --soup-qing: #8fae7a;
   --soup-hong: #c4563c;
   --soup-hei: #e8d3a8;
+
+  /* 判定七档的用色。两档两套：印章浮在画面中央、要压住底下的画卷，取沉一档；
+     记录条落在暗底面板上，同色相抬亮一点才读得出。同一个档两处的色相通，
+     改一档就动这两行，别再各处单写 hex。
+     「是也不是」不是骑墙，是这一问本来就只有一半是「是」—— 介于亮金（是）与
+     砖红（接近了）之间，单独成档；「不重要」比「无关」贴题（问的确实是故事里的人，
+     只是答了也不改汤底），所以比无关再沉一档，一眼分出「跑题」和「不碍事」。 */
+  --verdict-yes: var(--lamp);
+  --verdict-close: #c45c3e;
+  --verdict-both: #c9913f;
+  --verdict-unimportant: #9b8b74;
+  --verdict-plain: #b9a07a;   /* 不是 / 无关 / 拒答 / 答不上：记录条默认那档 */
+  --verdict-solved: var(--moss);
+  --verdict-close-hi: #e07a58;
+  --verdict-both-hi: #e0aa5e;
+  --verdict-unimportant-hi: #b6a284;
+  --verdict-plain-hi: #d8c7a6;
+  --verdict-muted-hi: #a08b6b;
+
+  /* 结案卷的朱印：比品牌那枚 --cinnabar(#9c2b1a) 亮一档，暗幕上才盖得住 */
+  --chop: #d5502f;
+
   --ease: cubic-bezier(.16, .84, .28, 1);
 }
 
@@ -23,6 +45,19 @@
 [data-soup="清汤"] { --sp: var(--soup-qing); --sp-bd: rgba(143, 174, 122, .55); --sp-bg: rgba(10, 14, 8, .42); }
 [data-soup="红汤"] { --sp: var(--soup-hong); --sp-bd: rgba(196, 86, 60, .60); --sp-bg: rgba(22, 8, 6, .45); }
 [data-soup="黑汤"] { --sp: var(--soup-hei); --sp-bd: rgba(156, 43, 26, .80); --sp-bg: rgba(0, 0, 0, .70); }
+
+/* ============ z-index 层级表（都在 .stage 内，由底到顶） ============
+   1  .hall 展厅底图          2  画卷 .frame-window / 侧墙 .wing      3  印章 .stamp
+   4  浮尘 .motes             5  卷号 .plaque / 汤面 .read / 箭头 .nav
+   6  品牌印 .seal / 记录 .dossier / 识别 .heard / 状态 .status
+   7  手势提示 .hint / 麦克说明 .mic-cap    8  声音 .sound / 灯 .lamp / 底栏 .dock
+   9  胶粒 .grain（fixed，罩全屏）          11 求灯居中 .hint-center（fixed）
+   12 解锁牌 .reveal          13 紧凑态搜索浮层 .finder（.stage.compact.finding）
+   14 排行榜 .board-layer     20 结案 .finale
+   38 入馆规矩 .tour（fixed）  40 开卷遮罩 .boot（fixed）
+   （.finale-scroll / .reveal-plate / .tour-sheet 内部还有自己的 1/2 分层，
+     那是弹层里的局部层序，不在全馆这张表上。）
+   加新层之前先看这里有没有空档；通知类压在交互层上、叙事类压在通知上。 */
 
 * { box-sizing: border-box; }
 html, body {
@@ -253,16 +288,12 @@ html, body {
   animation: chop .3s cubic-bezier(.2, 1.4, .3, 1);
 }
 .stamp[hidden] { display: none; }
-.stamp.yes { color: var(--lamp); border-color: var(--lamp); }
-.stamp.close, .stamp.partial { color: #c45c3e; border-color: #c45c3e; }
-.stamp.solved { color: var(--moss); border-color: var(--moss); }
-.stamp.irrelevant, .stamp.unanswerable, .stamp.refuse { color: #b9a07a; border-color: #b9a07a; }
-/* 「是也不是」不是骑墙，是这一问本来就只有一半是「是」（人有时活着有时死了）——
-   介于亮金（是）与砖红（接近了）之间，单独成档，别跟任何一档撞色。 */
-.stamp.both { color: #c9913f; border-color: #c9913f; }
-/* 「不重要」比「无关」更贴题（问的确实是故事里的人，只是答了也不改汤底），
-   所以比无关（#b9a07a）再沉一档，一眼能分出「跑题」和「不碍事」。 */
-.stamp.unimportant { color: #9b8b74; border-color: #9b8b74; }
+.stamp.yes { color: var(--verdict-yes); border-color: var(--verdict-yes); }
+.stamp.close, .stamp.partial { color: var(--verdict-close); border-color: var(--verdict-close); }
+.stamp.solved { color: var(--verdict-solved); border-color: var(--verdict-solved); }
+.stamp.irrelevant, .stamp.unanswerable, .stamp.refuse { color: var(--verdict-plain); border-color: var(--verdict-plain); }
+.stamp.both { color: var(--verdict-both); border-color: var(--verdict-both); }
+.stamp.unimportant { color: var(--verdict-unimportant); border-color: var(--verdict-unimportant); }
 
 /* 「接近了 / 部分对」额外给一圈暖光脉冲：这一问已经擦到边上了，给个手感暗示。
    光环做成中空的环（中心透明），否则会把印面整个洗白。 */
@@ -522,7 +553,7 @@ html, body {
   font-size: 12px;
   letter-spacing: .72em;
   text-indent: .72em;
-  color: #d5502f;
+  color: var(--chop);
   text-shadow: 0 0 18px rgba(213, 80, 47, .5);
 }
 .finale-title {
@@ -583,8 +614,8 @@ html, body {
   font-size: clamp(26px, 3.4vw, 40px);
   letter-spacing: .1em;
   line-height: 1;
-  color: #d5502f;
-  border: 3px solid #d5502f;
+  color: var(--chop);
+  border: 3px solid var(--chop);
   padding: .16em .2em .2em;
   text-shadow: 0 0 20px rgba(213, 80, 47, .4);
   pointer-events: none;
@@ -777,29 +808,22 @@ html, body {
   margin: 0 2px;
   background: rgba(196, 163, 106, .38);
 }
-/* 一行里现在有七枚 chip，收窄一档：390 宽的竖版下折成两行就够，
-   不收的话要折三行、把列表挤到只剩四五条（实测）。 */
-.find-list li.ftags button {
-  gap: 3px;
-  padding: 1px 5px;
-  font-size: 10px;
-  letter-spacing: .04em;
-}
-
 /* 这一行不是「一条结果」，别跟着 li:hover 变色、也别出 pointer 手势 */
 .find-list li.ftags:hover { background: rgba(16, 11, 7, .97); }
+/* 一行里现在有七枚 chip（四汤色 + 三难度），收窄一档：390 宽的竖版下折成两行就够，
+   不收的话要折三行、把列表挤到只剩四五条（实测）。 */
 .find-list li.ftags button {
   display: inline-flex;
   align-items: baseline;
-  gap: 4px;
-  padding: 1px 6px;
+  gap: 3px;
+  padding: 1px 5px;
   background: var(--sp-bg, transparent);
   border: 1px solid var(--sp-bd, rgba(215, 161, 90, .45));
   border-radius: 0;
   color: var(--sp, #d7c09a);
   font-family: "ZCOOL XiaoWei", serif;
-  font-size: 11px;
-  letter-spacing: .06em;
+  font-size: 10px;
+  letter-spacing: .04em;
   line-height: 1.5;
   cursor: pointer;
   opacity: .55;
@@ -1239,13 +1263,13 @@ html, body {
 /* 停表：长时间没操作时计时暂停。这是「计时停了」的第二个出口 ——
    紧凑态 #elapsed 是 display:none，只留这一枚能看见（见 app.js「计时」那一段）。 */
 .meter #pauseTag {
-  color: #e0aa5e;
+  color: var(--verdict-both-hi);
   border: 1px solid rgba(215, 161, 90, .55);
   padding: 0 5px;
   letter-spacing: .1em;
 }
 .meter #pauseTag[hidden] { display: none; }
-.meter #elapsed.paused { color: #a08b6b; }
+.meter #elapsed.paused { color: var(--verdict-muted-hi); }
 .keys {
   display: flex;
   flex-wrap: wrap;
@@ -1343,7 +1367,7 @@ html, body {
   grid-template-columns: 1.2em 1fr auto;
   gap: 6px;
   font-size: 12px;
-  color: #d8c7a6;
+  color: var(--verdict-plain-hi);
   margin: 0 0 4px;
 }
 .board .me { color: var(--lamp); }
@@ -1368,24 +1392,22 @@ html, body {
   font-family: "ZCOOL XiaoWei", serif;
   letter-spacing: .2em;
   font-size: 16px;
-  color: var(--lamp);
+  color: var(--verdict-yes);
 }
-.ledger .a.no, .ledger .a.irrelevant { color: #d8c7a6; }
-.ledger .a.close, .ledger .a.partial { color: #e07a58; }
-/* 「是也不是」介于亮金（是）与砖红（接近了）之间：它本来就是「一半是、一半不是」 */
-.ledger .a.both { color: #e0aa5e; }
-/* 「不重要」比「无关」贴题（问的是故事里的人，只是不影响汤底），排一档更沉的灰褐 */
-.ledger .a.unimportant { color: #b6a284; }
-/* 这两档原来没写，落到 .ledger .a 的默认色（var(--lamp)）——
-   跟「是」撞成同一个颜色，扫一眼记录条分不出哪条是真被确认的。 */
-.ledger .a.unanswerable, .ledger .a.refuse { color: #a08b6b; }
-.ledger .a.solved { color: var(--moss); }
+.ledger .a.no, .ledger .a.irrelevant { color: var(--verdict-plain-hi); }
+.ledger .a.close, .ledger .a.partial { color: var(--verdict-close-hi); }
+.ledger .a.both { color: var(--verdict-both-hi); }
+.ledger .a.unimportant { color: var(--verdict-unimportant-hi); }
+.ledger .a.unanswerable, .ledger .a.refuse { color: var(--verdict-muted-hi); }
+.ledger .a.solved { color: var(--verdict-solved); }
 .ledger .ms {
   font-family: "IBM Plex Mono", monospace;
   font-size: 10px;
   color: #8a7760;
   letter-spacing: .08em;
 }
+/* 正在听的那一下用砖红，不用判定档的金 —— 它是「正在收音」的警示，
+   不是对某一问的判定，跟 .stamp.close 同色相纯属巧合，别收进 verdict 变量。 */
 .stage.listening .mic-cap { color: #c45c3e; }
 
 @keyframes pulse {
@@ -1428,6 +1450,17 @@ html, body {
 .stage.busy .type-line input { opacity: .6; }
 /* 求灯跟「问」同排，忙碌时一起压暗 —— 不然正等着掌灯，旁边那枚还亮着像能点 */
 .stage.busy .hint-ask { opacity: .45; pointer-events: none; }
+
+/* 键盘焦点：全馆统一的描金细框。原来只有 .tour-dot 有焦点反馈，
+   麦克风 / 换卷箭头 / 求灯 / 排行榜的关按钮 Tab 到的时候什么都看不见，
+   键盘用户等于闭眼走。outline 不占布局（不会把按钮顶歪），圆钮就跟着圆。 */
+.stage button:focus-visible,
+.wing:focus-visible {
+  outline: 1px solid var(--lamp);
+  outline-offset: 2px;
+}
+.stage .mic:focus-visible,
+.stage .nav:focus-visible { outline-offset: 3px; }
 
 .grain {
   pointer-events: none;
@@ -1712,7 +1745,7 @@ html, body {
   transition: width .2s ease, background .2s ease;
 }
 .tour-dot.on::after { width: 20px; background: #d7a15a; }
-.tour-dot:focus-visible { outline: 1px solid #d7a15a; outline-offset: 1px; }
+.tour-dot:focus-visible { outline: 1px solid var(--lamp); outline-offset: 1px; }
 .tour-count {
   font-family: "IBM Plex Mono", monospace;
   font-size: 11px;
@@ -1857,9 +1890,6 @@ html, body {
      所以它聚焦时**既不藏面板、JS 也不翻布局**，改完失焦再各就各位。 */
   .stage.tall.naming .dossier { display: block; }
 }
-.stage.tall .ledger .a { font-size: 14px; }
-.stage.tall .board-open { margin-top: 8px; padding: 6px 0; font-size: 13px; }
-.stage.tall .board-sheet { width: 88vw; max-height: 66vh; }
 
 .stage.tall .dock {
   bottom: 4vh;
@@ -1879,8 +1909,7 @@ html, body {
   width: 88vw;
 }
 .stage.tall .status { bottom: calc(4vh + 52px); font-size: 10px; letter-spacing: .3em; }
-.stage.tall .mic-cap { bottom: 0.8vh; font-size: 10px; }
-.stage.tall .mic-cap { display: none; }
+.stage.tall .mic-cap { bottom: 0.8vh; font-size: 10px; display: none; }
 .stage.tall .hint { top: auto; bottom: 34vh; font-size: 11px; letter-spacing: .22em; }
 
 /* 底部这一摞改成「从输入条往上摞」，严格自上而下：汤面 → 记录 → 识别 → 状态 → 输入条。
@@ -2347,4 +2376,25 @@ html, body {
 
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  /* 盖章是判定反馈，不是装饰：全砍了用户问完一句就没有任何「落定了」的手感。
+     保留印章本身，只去掉位移和脉冲（缩放/抖动/光环），换成单纯的淡入。
+     !important 是为了盖过上面那条通配 —— 两者同优先级，靠 !important 说话。 */
+  .stamp,
+  .stamp.yes,
+  .stamp.close,
+  .stamp.partial {
+    animation: stampFade .18s ease-out both !important;
+  }
+  .stamp::after { animation: none !important; }
+  .finale-chop { animation: chopFade .3s ease-out 1.2s both !important; }
+  .stage.quake, .stage.quake-big { animation: none !important; }
+}
+@keyframes stampFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+/* 结案印末态比印章淡一点（.92），跟 chopFinale 的收尾一致 */
+@keyframes chopFade {
+  from { opacity: 0; }
+  to { opacity: .92; }
 }
