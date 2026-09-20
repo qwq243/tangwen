@@ -6,6 +6,11 @@
 // 于是手机上点求灯：状态行闪一下「掌灯……」，然后就什么都没有了，
 // 而 promptedSet 已经把这一卷的「孤灯」扣掉了。
 //
+// 2026-09-20 又改了一次**位置**：用户实报「提示不明显，直接放在我们历史记录方框的上面，
+// 但不要把汤面挡住了」。提示行现在是记录方框的第一行（以前是记录条最后一行，
+// 而屏幕上还有一件居中的浮层盖着汤面，那件已删）。这里的断言跟着加了三条：
+//   **提示行排在问答记录之上**、**提示行与汤面矩形不相交**、**汤面 / 输入条都不许被它压上**。
+//
 // 用法：node tools/hint-check.mjs [url] [宽] [高]
 // 默认 http://127.0.0.1:8765/ 390 844
 // 默认拦掉 /api/hint 与 /api/ask 造假回答（提示是一句可检索的固定文案）。
@@ -74,12 +79,26 @@ const PROBE = `(function(){
     return hits;
   }
   var stage=document.querySelector('.stage');
+  /* 提示行与记录、汤面、输入条的位置关系。用户那条硬约束（别挡住汤面）在这里量：
+     矩形相交判定，不是「看着没挡」。 */
+  function rect(e){ return e? e.getBoundingClientRect():null; }
+  function hit(a,b){ return !!(a&&b&&a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top); }
+  var lineEl=document.getElementById('hintLine');
+  var lineR=rect(lineEl);
+  var ledgerR=rect(document.querySelector('.ledger'));
+  var readR=rect(document.querySelector('.read'));
   return { cls: stage.className, vw: innerWidth, vh: innerHeight,
            toast: box('#hint'), line: box('#hintLine'), ask: box('#hintAsk'),
            board: box('#boardOpen'), dock: box('.dock'), dossier: box('.dossier'),
            read: box('.read'), frame: box('.frame-window'),
-           hits: findText(${JSON.stringify(MARK)}),
-           hits2: findText(${JSON.stringify(MARK2)}),
+           places: findText(${JSON.stringify(MARK)}),
+           places2: findText(${JSON.stringify(MARK2)}),
+           /* 提示行在记录列表之上（记录方框第一行），且不压汤面 / 不压输入条 */
+           aboveLedger: !!(lineR && ledgerR && lineR.bottom <= ledgerR.top + 1),
+           overRead: hit(lineR, readR),
+           overDock: hit(lineR, rect(document.querySelector('.dock'))),
+           readR: readR ? {y:Math.round(readR.y), bottom:Math.round(readR.bottom)} : null,
+           lineR: lineR ? {y:Math.round(lineR.y), bottom:Math.round(lineR.bottom)} : null,
            ledger: [].slice.call(document.querySelectorAll('.ledger li')).length,
            errs: (window.__errs||[]).slice(0,4) };
 })()`;
@@ -163,15 +182,21 @@ console.log(`  ${r.cls}  toast=${JSON.stringify(r.toast)}  line=${JSON.stringify
 check(r.ask && r.ask.shown, '灯亮了，求灯按钮在');
 await asked();
 r = await ev(PROBE);
-console.log(`  求灯后  toast.display=${r.toast.display} line.shown=${r.line.shown}  hits=${JSON.stringify(r.hits)}`);
-check(r.hits.length >= 1, '画廊态：屏幕上真出现了提示文字', JSON.stringify(r.hits));
+console.log(`  求灯后  toast.display=${r.toast.display} line.shown=${r.line.shown}  hits=${JSON.stringify(r.places)}`);
+check(r.places.length >= 1, '画廊态：屏幕上真出现了提示文字', JSON.stringify(r.places));
 check(r.line.shown === true, '画廊态：.hint-line 常驻可见');
+check(r.line.y >= r.dossier.y - 1 && r.line.y + r.line.h <= r.dossier.y + r.dossier.h + 1,
+  '画廊态：提示行在记录方框里（不是漂在方框外面）',
+  `行 ${r.line.y}~${r.line.y + r.line.h} / 方框 ${r.dossier.y}~${r.dossier.y + r.dossier.h}`);
+check(r.aboveLedger === true, '画廊态：提示行排在问答记录**上面**（用户要的位置）');
+check(r.overRead === false, '画廊态：提示行不压汤面',
+  `行 ${JSON.stringify(r.lineR)} / 汤面 ${JSON.stringify(r.readR)}`);
 await shotTo('hn_1_gallery.png');
 
 console.log('\n=== 2. 画廊态：toast 淡出之后还读得到吗 ===');
 await sleep(7000);
 r = await ev(PROBE);
-check(r.hits.length >= 1, 'toast 淡出后提示仍在（常驻位）', JSON.stringify(r.hits));
+check(r.places.length >= 1, 'toast 淡出后提示仍在（常驻位）', JSON.stringify(r.places));
 check(r.toast.display === 'none' || !r.toast.shown, 'toast 自己按时收了', `display=${r.toast.display}`);
 
 console.log(`\n=== 3. 紧凑态 ${W}×${COMPACT_H}（手机常态）：求灯要看得见 ===`);
@@ -195,13 +220,18 @@ console.log(`  求灯前（提示行藏起来）画卷 ${noHint.frame} / 记录�
 await asked();
 r = await ev(PROBE);
 const gap = Math.round(r.dossier.y - (r.read.y + r.read.h));
-console.log(`  求灯后  toast.display=${r.toast.display} line.display=${r.line.display} hits=${JSON.stringify(r.hits)}`);
+console.log(`  求灯后  toast.display=${r.toast.display} line.display=${r.line.display} hits=${JSON.stringify(r.places)}`);
 console.log(`  求灯后  画卷 ${r.frame.h} / 记录条 ${r.dossier.h} / 汤面底 ${r.read.y + r.read.h} / 记录条顶 ${r.dossier.y}（留白 ${gap}）`);
-check(r.hits.length >= 1, '紧凑态：屏幕上真出现了提示文字', JSON.stringify(r.hits));
-/* 提示是记录条那条横带的第二行，所以它一出现，记录条就变高 —— 多出来的高度
-   必须由两个 auto 外边距吸收，不能去压汤面、更不能挤画卷。这一组断言就是钉这个的。 */
-check(r.dossier.h - noHint.dossier >= 15, '提示行确实占在记录条里（不是浮在上面）',
+check(r.places.length >= 1, '紧凑态：屏幕上真出现了提示文字', JSON.stringify(r.places));
+/* 提示是记录方框（记录条那条横带）的**第一行**，所以它一出现，记录条就变高 ——
+   多出来的高度必须由两个 auto 外边距吸收，不能去压汤面、更不能挤画卷。
+   位置三条（在记录之上 / 不压汤面 / 不压输入条）是 2026-09-20 用户那条硬约束的钉子。 */
+check(r.dossier.h - noHint.dossier >= 15, '提示行确实占在记录方框里（不是浮在上面）',
   `无提示 ${noHint.dossier} -> 有提示 ${r.dossier.h}`);
+check(r.aboveLedger === true, '紧凑态：提示行是这个方框的第一行（排在问答记录之上）');
+check(r.overRead === false, '紧凑态：提示行不压汤面',
+  `行 ${JSON.stringify(r.lineR)} / 汤面 ${JSON.stringify(r.readR)}`);
+check(r.overDock === false, '紧凑态：提示行不压输入条');
 check(r.frame.h === noHint.frame, '画卷高度纹丝不动（富余被 auto 外边距吸收，没去挤画卷）',
   `${noHint.frame} -> ${r.frame.h}`);
 check(r.read.y + r.read.h <= r.dossier.y + 1, '记录条没压上汤面');
@@ -211,16 +241,16 @@ await shotTo('hn_2_compact.png');
 console.log('  --- 等 8s（假提示的 toast 是 5200ms）再扫一次 ---');
 await sleep(8000);
 r = await ev(PROBE);
-console.log(`  hits=${JSON.stringify(r.hits)}`);
-check(r.hits.length >= 1, '紧凑态：过一会儿还读得到（提示不该一闪就没）');
+console.log(`  hits=${JSON.stringify(r.places)}`);
+check(r.places.length >= 1, '紧凑态：过一会儿还读得到（提示不该一闪就没）');
 
 console.log('\n=== 4. 刷新之后（提示该跟着存档回来）===');
 await send('Page.navigate', { url: URL + '?_cb=' + Date.now() });
 await sleep(4500);
 await lamp(true);
 r = await ev(PROBE);
-console.log(`  line.shown=${r.line.shown} line.text=${JSON.stringify((r.line||{}).text)} hits=${JSON.stringify(r.hits)}`);
-check(r.hits.length >= 1, '刷新后提示还在（已存档）', JSON.stringify(r.hits));
+console.log(`  line.shown=${r.line.shown} line.text=${JSON.stringify((r.line||{}).text)} hits=${JSON.stringify(r.places)}`);
+check(r.places.length >= 1, '刷新后提示还在（已存档）', JSON.stringify(r.places));
 check(await ev('window.__hintCalls()') <= 2, '刷新没有额外打接口', `hint 调用 ${await ev('window.__hintCalls()')} 次`);
 
 console.log('\n=== 5. 灯关掉：求灯入口和提示一起收起来 ===');
@@ -238,14 +268,20 @@ check(r.line.shown === true, '再开灯提示也回来（不用重新求）', JS
 console.log('\n=== 6. 换一卷求一句长的（服务端最多 48 字），看折成两行还压不压得住 ===');
 await ev("document.getElementById('next').click()");
 await sleep(1600);
-check((await ev("document.getElementById('hintLine').textContent")).length === 0, '换卷后提示行是空的（提示按卷存）');
+/* 读 #hintText（那句提示自己的那一格），不是整条 #hintLine ——
+   提示行里还有一枚小灯图标和「灯语」两个字，那是常设的牌子，不随换卷清空。 */
+check((await ev("document.getElementById('hintText').textContent")).length === 0,
+  '换卷后提示正文是空的（提示按卷存）');
 await ev('window.__longHint = true');   // 让桩这次回长句
 await asked();
 r = await ev(PROBE);
 console.log(`  提示 ${r.line.text.length} 字 / 行高 ${r.line.h} / 记录条 ${r.dossier.h} / 画卷 ${r.frame.h}`);
-check(r.hits2.length >= 1, '紧凑态：长提示也看得见', JSON.stringify(r.hits2));
+check(r.places2.length >= 1, '紧凑态：长提示也看得见', JSON.stringify(r.places2));
 check(r.line.h >= 30, '长提示确实折成了两行', `行高 ${r.line.h}`);
-check(r.read.y + r.read.h <= r.dossier.y + 1, '长提示没压上汤面');
+check(r.aboveLedger === true, '长提示也在记录方框第一行（折两行也没被挤到别处）');
+check(r.overRead === false, '长提示没压上汤面',
+  `行 ${JSON.stringify(r.lineR)} / 汤面 ${JSON.stringify(r.readR)}`);
+check(r.read.y + r.read.h <= r.dossier.y + 1, '记录方框没压上汤面');
 check(r.dossier.y + r.dossier.h <= r.dock.y + 1, '长提示没压上输入条');
 check(r.frame.h >= r.vh * 0.28, '长提示下画卷仍没退化', `画卷 ${r.frame.h} / 门槛 ${Math.round(r.vh * 0.28)}`);
 await shotTo('hn_3_long.png');

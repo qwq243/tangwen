@@ -51,14 +51,18 @@ button, input, select { font: inherit; color: inherit; }
   margin-bottom: 16px;
 }
 
-.card > h2 {
+/* 卡片标题。`.vol-head > h2` 那一支是「标题与搜索框同一行」的卷宗核对 ——
+   有个 flex 容器包着，所以它不再是 .card 的直接子元素。 */
+.card > h2,
+.vol-head > h2 {
   margin: 0 0 14px;
   font-size: 15px;
   font-weight: 500;
   letter-spacing: .22em;
   color: var(--lamp);
 }
-.card > h2 .sub {
+.card > h2 .sub,
+.vol-head > h2 .sub {
   margin-left: 10px;
   letter-spacing: 0;
   font-size: 12px;
@@ -167,6 +171,53 @@ tbody tr:last-child td { border-bottom: 0; }
 @media (max-width: 860px) { .cols { grid-template-columns: 1fr; } }
 
 /* ---------------- 卷宗核对 ---------------- */
+
+/* ---------------- 模型调用 ----------------
+   判题（付费）与求灯（免费额度）分开看，失败 / 兜底两格是「要看的」不是「顺带一看」：
+   它们不为 0 就意味着密钥、额度或上游出了问题 —— 线上表现只是「问不出/提示永远同一句」。 */
+
+.mods { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.mod { background: #0c0906; border: 1px solid var(--line); border-radius: 3px; padding: 11px 13px 12px; }
+.mod .k { font-size: 12px; color: var(--faint); letter-spacing: .1em; }
+.mod .v {
+  font-family: var(--mono); font-size: 22px; line-height: 1.3; margin-top: 2px;
+  font-variant-numeric: tabular-nums;
+}
+.mod .d { font-size: 11.5px; color: var(--faint); font-family: var(--mono); }
+.mod.warn { border-color: rgba(196, 86, 60, .5); }
+.mod.warn .v { color: #d98a72; }
+.mod-note { margin: 12px 0 6px; font-size: 12px; line-height: 1.8; color: var(--faint); }
+#modTable .empty { padding: 8px 0 2px; }
+
+/* ---------------- 卷宗核对的搜索与分类 ---------------- */
+
+.vol-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
+.vol-head > h2 { margin-bottom: 0; }
+.vol-head .grow { flex: 1; }
+.vol-find { display: flex; align-items: center; gap: 6px; }
+.vol-find input {
+  width: 260px; max-width: 56vw;
+  background: #0a0806; border: 1px solid var(--line-strong); border-radius: 3px;
+  padding: 6px 9px; font-size: 13px;
+}
+.vol-find input:focus { outline: 0; border-color: var(--lamp); background: #0d0a07; }
+.vol-find input::placeholder { color: var(--faint); font-size: 12px; }
+.vol-find input::-webkit-search-cancel-button { display: none; }
+.vol-tags { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 0 0 6px; }
+.vol-tags button {
+  display: inline-flex; align-items: baseline; gap: 4px;
+  background: transparent; border: 1px solid var(--line); border-radius: 2px;
+  padding: 2px 7px; font-size: 12px; color: var(--dim); cursor: pointer;
+  opacity: .72; transition: opacity .16s, border-color .16s, color .16s;
+}
+.vol-tags button:hover { opacity: 1; border-color: var(--line-strong); color: var(--paper); }
+.vol-tags button.on {
+  opacity: 1; border-color: var(--lamp); color: var(--lamp);
+  box-shadow: inset 0 0 0 1px rgba(215, 161, 90, .22);
+}
+.vol-tags button .k { font-family: var(--mono); font-size: 10px; color: var(--faint); }
+.vol-tags button.on .k { color: var(--lamp); }
+.vol-tags .sep { width: 1px; align-self: stretch; margin: 0 3px; background: var(--line); }
 
 .vols { display: flex; flex-direction: column; }
 .vol { border-bottom: 1px solid rgba(215, 161, 90, .09); }

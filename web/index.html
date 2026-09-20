@@ -5,14 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
   <meta name="theme-color" content="#050403" />
   <title>汤问</title>
-  <link rel="preload" href="./styles.css?v=34" as="style" />
+  <link rel="preload" href="./styles.css?v=36" as="style" />
   <link rel="preload" href="./images/hall-plate.webp" as="image" type="image/webp" media="(orientation: landscape)" />
   <link rel="preload" href="./images/hall-plate-portrait.webp" as="image" type="image/webp" media="(orientation: portrait)" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=ZCOOL+XiaoWei&family=Noto+Serif+SC:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
   <noscript><link href="https://fonts.googleapis.com/css2?family=ZCOOL+XiaoWei&family=Noto+Serif+SC:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" /></noscript>
-  <link rel="stylesheet" href="./styles.css?v=34" />
+  <link rel="stylesheet" href="./styles.css?v=36" />
 </head>
 <body>
   <div class="void">
@@ -104,6 +104,12 @@
       <p class="sr-verdict" id="srVerdict" role="status" aria-live="polite" aria-atomic="true"></p>
 
       <aside class="dossier" id="dossier">
+        <!-- 灯语：求灯求来的那句提示。**这是它在页面上的唯一位置**（app.js 的 syncHint 管）。
+             位置是用户定的（2026-09-20 实报）：「提示的内容不明显，可以直接放在我们历史记录
+             方框的上面，但是不要把汤面挡住了」。所以它是记录方框的第一行 —— 常驻、能反复读、
+             刷新后还在，而且整块都在汤面之下，一屏也不压汤面。
+             以前那件屏幕正中的浮层（#hintCenter）已经删掉：手机上一浮就盖在汤面上。 -->
+        <p class="hint-line" id="hintLine" hidden><svg class="wick" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21h6v-1.4A7 7 0 0 0 19 13c0-3.87-3.13-7-7-7S5 9.13 5 13a7 7 0 0 0 4 6.6V21z"/><path d="M10 22h4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><i>灯语</i><span id="hintText"></span></p>
         <div class="player">
           <label for="playerName">名</label>
           <input id="playerName" maxlength="8" autocomplete="off" />
@@ -118,7 +124,6 @@
         </div>
         <div class="keys" id="keys" hidden></div>
         <ol class="ledger" id="ledger"></ol>
-        <p class="hint-line" id="hintLine" hidden></p>
         <button class="board-open" id="boardOpen" type="button">排行榜</button>
       </aside>
 
@@ -191,13 +196,10 @@
       </div>
       <div class="mic-cap" id="micCap">按住说话 · 也可打字</div>
       <div class="hint" id="hint"></div>
-      <!-- 求灯的居中展示：AI 这句提示除了记录条里那行常驻的 `.hint-line`，再在屏幕正中浮一次。
-           为什么另开一件而不复用 #hint：那个 toast 在紧凑态是 display:none（只有画廊态有位置），
-           手机上点完求灯唯一的反馈就是记录条下面多出来的那一行字，很容易没注意到。
-           用 fixed 定位 —— 它不参与任何一段布局的高度，compact-scan 量的六段高度、
-           hint-check 量的「画卷 / 门槛」都不受影响。
-           aria-hidden：读屏那句已经由 announce('提示。…') 播过了，这里再播一遍是重复。 -->
-      <div class="hint-center" id="hintCenter" aria-hidden="true"><p></p></div>
+      <!-- 求灯的那句提示不在这儿：它在记录方框的第一行（#hintLine）。
+           这里原来还有一件屏幕正中的浮层 #hintCenter，2026-09-20 删掉了 ——
+           用户实报「提示不明显，放记录方框上面，别挡住汤面」，而它正好盖在汤面上。
+           求到的即时反馈现在是记录方框顶部那一行整行亮一记（.hint-line.lit）。 -->
     </div>
   </div>
   <div class="grain" aria-hidden="true"></div>
@@ -234,7 +236,7 @@
         <section class="tour-card" hidden>
           <i class="tour-no" aria-hidden="true">肆</i>
           <h3>结案与求灯</h3>
-          <p>关键点问齐，汤底自现。灯默认是灭的——点亮方能求灯，灯语留在卷宗；无灯结案，榜上记你一盏「孤灯」。</p>
+          <p>关键点问齐只是料到手；把汤底用自己的话讲一遍，讲对了才结案。灯默认是灭的——点亮方能求灯，灯语留在卷宗第一行；无灯结案，榜上记你一盏「孤灯」。</p>
         </section>
       </div>
       <p class="tour-note">三十四卷，由浅入深 · 一分钟没动静，计时自会停</p>
@@ -246,7 +248,7 @@
     </div>
   </div>
 
-  <script src="./audio.js?v=34"></script>
-  <script src="./app.js?v=34"></script>
+  <script src="./audio.js?v=36"></script>
+  <script src="./app.js?v=36"></script>
 </body>
 </html>

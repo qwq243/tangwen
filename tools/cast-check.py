@@ -84,9 +84,14 @@ def check_parity(srv) -> list[str]:
          —— 只改一边，线上和本地就会对不同的问题给不同的印；
       2. **state 的字段顺序**：cast 排在哪一位是量出来的（见下面的 --order），
          两边顺序不一样等于两个模型。tools/cast.py 只管数据，管不到这个。
+      3. **结案口径（SOLVE-RULE）**：三个阈值同值，而且两边的 solved 判据都必须认
+         「猜中」那条线、都不许退回「关键点问齐就结案」。这条是 2026-09-20 用户实报
+         （关键点问齐就当场结案，玩家其实没想通）之后加的钉子；跑 tools/judge-check.py
+         会带上同一道检查。
     """
     js_path = ROOT / "functions" / "api" / "[[path]].js"
     src = js_path.read_text(encoding="utf-8")
+    py_src = (ROOT / "server.py").read_text(encoding="utf-8")
     errs: list[str] = []
     # 两份 puzzles.json 必须逐字节一致：线上 import 的是 functions/puzzles.json，
     # 本地读的是根目录那份，不一致就是本地一套、线上一套。
@@ -105,6 +110,30 @@ def check_parity(srv) -> list[str]:
             errs.append(f"criteria.{key} 在 JS 里找不到（两边口径不一致）")
     if "identity:" not in src:
         errs.append("JS 的 host_answer 里没有 identity 那一条")
+    # 三个 noul 问题也要逐字一致 —— 结案就架在 is_full_guess / guess_correct 上，
+    # 只改一边等于线上和本地两套结案口径。
+    for qid in ("trying_to_extract", "is_full_guess", "guess_correct"):
+        text = srv.BASE_QUESTIONS[qid]["instructions"]
+        if text not in src:
+            errs.append(f"BASE_QUESTIONS.{qid} 的说明在 JS 里找不到（两边口径不一致）")
+
+    # SOLVE-RULE：三个数两边同值，判据本身也不许有一边偷偷退回关键点口径
+    py_rule = solve_rule_of(py_src, r'SOLVE_RULE = \{(.*?)\}', r'"(\w+)":\s*([0-9.]+)')
+    js_rule = solve_rule_of(src, r'const SOLVE_RULE = \{(.*?)\n\};', r'(\w+):\s*([0-9.]+)')
+    if not py_rule:
+        errs.append("server.py 里没有 SOLVE_RULE（结案口径的阈值该有一处定义）")
+    if py_rule != js_rule:
+        errs.append(f"SOLVE_RULE 两边不同值：py={py_rule} js={js_rule}")
+    for name, m in (("server.py", re.search(r'^\s*solved = (.+)$', py_src, re.M)),
+                    ("functions", re.search(r'const solved = (.+);', src))):
+        if not m:
+            errs.append(f"{name} 里找不到 solved 的判据（SOLVE-RULE 的落点）")
+            continue
+        line = m.group(1)
+        if "guess" not in line.lower():
+            errs.append(f"{name} 的 solved 判据里没有「猜中」那条线（SOLVE-RULE）")
+        if "found" in line or "every(" in line:
+            errs.append(f"{name} 的 solved 又退回关键点判据了（SOLVE-RULE：问齐不等于结案）")
 
     def keys_of(text: str, start: str, stop: str) -> list[str]:
         i = text.find(start)
@@ -114,12 +143,19 @@ def check_parity(srv) -> list[str]:
         seg = text[i:j if j > 0 else len(text)]
         return [m.group(1) for m in re.finditer(r'^\s*"?([a-z_]+)"?\s*:', seg, re.M)]
 
-    py_src = (ROOT / "server.py").read_text(encoding="utf-8")
     py_order = keys_of(py_src, '"title": puzzle["title"]', "\n    }")
     js_order = keys_of(src, "title: puzzle.title", "};")
     if py_order != js_order:
         errs.append(f"state 字段顺序两边不一样：py={py_order} js={js_order}")
     return errs
+
+
+def solve_rule_of(text: str, block_re: str, item_re: str) -> dict[str, float]:
+    """从源码里抠出 SOLVE_RULE 那几个数 —— 两个文件的写法不同，各给一条正则。"""
+    block = re.search(block_re, text, re.S)
+    if not block:
+        return {}
+    return {m.group(1): float(m.group(2)) for m in re.finditer(item_re, block.group(1))}
 
 
 def subject(name: str) -> str:

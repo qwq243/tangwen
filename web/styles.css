@@ -51,12 +51,13 @@
    4  浮尘 .motes             5  卷号 .plaque / 汤面 .read / 箭头 .nav
    6  品牌印 .seal / 记录 .dossier / 识别 .heard / 状态 .status
    7  手势提示 .hint / 麦克说明 .mic-cap    8  声音 .sound / 灯 .lamp / 底栏 .dock
-   9  胶粒 .grain（fixed，罩全屏）          11 求灯居中 .hint-center（fixed）
+   9  胶粒 .grain（fixed，罩全屏）
    12 解锁牌 .reveal          13 紧凑态搜索浮层 .finder（.stage.compact.finding）
    14 排行榜 .board-layer     20 结案 .finale
    38 入馆规矩 .tour（fixed）  40 开卷遮罩 .boot（fixed）
    （.finale-scroll / .reveal-plate / .tour-sheet 内部还有自己的 1/2 分层，
-     那是弹层里的局部层序，不在全馆这张表上。）
+     那是弹层里的局部层序，不在全馆这张表上。
+     这里原有一层 11 求灯居中 .hint-center，2026-09-20 删了 —— 提示现在只在记录方框第一行。）
    加新层之前先看这里有没有空档；通知类压在交互层上、叙事类压在通知上。 */
 
 * { box-sizing: border-box; }
@@ -974,30 +975,56 @@ html, body {
 .hint-ask svg { width: 13px; height: 13px; flex: 0 0 auto; fill: currentColor; }
 .hint-ask:hover { background: rgba(215, 161, 90, .22); border-color: #e0b877; color: #fff0d8; }
 .hint-ask[hidden] { display: none; }
+/* 灯语：求来的那句提示。**位置是用户定的**（2026-09-20 实报）：「提示的内容不明显，
+   可以直接放在我们历史记录方框的上面，但是不要把汤面挡住了」——
+   所以它是 .dossier（记录方框）的第一行，整块都在汤面之下，一屏也不压汤面。
+   以前它排在记录条最后一行（13px 素字，埋在记录下面），手机上还另有一件屏幕正中的
+   浮层盖着汤面 —— 那两件都在这次改掉了（浮层 #hintCenter 已删）。
+
+   分量也一起加了：底色 + 描金框 + 左沿那道灯芯，另配一枚小灯与「灯语」二字。
+   不做成浮层、不做成 toast —— 它是**能反复读的常驻件**，刷新后还得在（有存档）。 */
 .hint-line {
-  margin: 8px 0 0;
-  padding: 0 0 0 10px;
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin: 0 0 9px;
+  padding: 7px 9px;
+  background: rgba(215, 161, 90, .1);
+  border: 1px solid rgba(215, 161, 90, .42);
+  border-left: 2px solid var(--lamp);
   font-size: 13px;
-  line-height: 1.65;
-  color: #e8d7b8;
+  line-height: 1.62;
+  color: #f2dfbc;
   text-shadow: 0 1px 6px #000;
-  /* 左侧一道灯芯金线 —— 求灯按钮是描金的，提示落回记录条还是同一盏灯 */
-  border-left: 1px solid rgba(215, 161, 90, .5);
-  position: relative;
-}
-/* 灯芯：金线顶端一粒亮点，别做成图标，越素越像灯芯 */
-.hint-line::before {
-  content: "";
-  position: absolute;
-  left: -2.5px;
-  top: .42em;
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: var(--lamp);
-  box-shadow: 0 0 6px rgba(215, 161, 90, .8);
 }
 .hint-line[hidden] { display: none; }
+/* 灯芯（小灯图标）与「灯语」：跟底栏那枚描金灯牌同一盏灯，看到就知道是谁说的话。
+   这两件都不换行，长提示只折正文（letter-spacing 把「灯语」两个字拉开一点）。
+   `i` 是馆里这类小标签的老写法（`<i class="ok">已结案</i>`、`<i class="badge-lone">` 同理），
+   所以 font-style 要显式归正。 */
+.hint-line .wick {
+  flex: 0 0 auto;
+  width: 13px;
+  height: 13px;
+  margin-top: .34em;
+  fill: var(--lamp);
+}
+.hint-line i {
+  flex: 0 0 auto;
+  margin-top: .16em;
+  font-family: "ZCOOL XiaoWei", serif;
+  font-style: normal;
+  font-size: 11px;
+  letter-spacing: .16em;
+  color: var(--lamp);
+}
+/* 灯刚来那一下：整行亮一记。这是删掉居中浮层之后「点下去当场有反应」的替代 ——
+   它亮在自己该在的地方，不浮到汤面上去盖东西。 */
+.hint-line.lit { animation: hintLit 1.4s var(--ease); }
+@keyframes hintLit {
+  0% { background: rgba(215, 161, 90, .5); border-color: var(--lamp); }
+  100% { background: rgba(215, 161, 90, .1); }
+}
 .badge-lone {
   display: inline-block;
   margin-left: 6px;
@@ -1354,6 +1381,17 @@ html, body {
   from { transform: scale(.8); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
 }
+/* 「讲一遍就结案」：关键点问到最后一个之后挂在 chips 末尾的那一枚。
+   它不是线索，是**下一步该怎么走**：所以虚线框、不填底色，跟前面那些实心的线索
+   一眼分得开（也只是句话，按不动）。口径见 server.py 的 SOLVE_RULE。 */
+.key-chip.ready {
+  border-style: dashed;
+  border-color: rgba(215, 161, 90, .55);
+  background: transparent;
+  box-shadow: none;
+  color: var(--lamp);
+  letter-spacing: .1em;
+}
 .ledger {
   list-style: none;
   margin: 8px 0 0;
@@ -1657,55 +1695,11 @@ html, body {
 }
 .hint.show { opacity: .85; }
 
-/* 求灯那句提示的居中展示：屏幕正中浮一次，几秒后自己渐隐。
-   两套布局共用（不像 .hint 那样在紧凑态被 display:none 掉）—— 手机上点完「求灯」
-   的即时反馈就靠它，见 app.js 的 showHintCenter()。
-
-   fixed + pointer-events:none：它不占任何一段布局的高度（compact-scan 量的六段、
-   hint-check 量的「画卷 / 门槛」都不受影响），也不挡底栏的输入条和麦克风。
-   z-index 11 是照着现有层级挑的：在 .hint(7) 与 .dock(8) 之上，
-   在 .reveal(12) / .finale(20) / .tour(38) 之下 —— 它是通知，不该压住解锁牌和结案画卷。 */
-.hint-center {
-  position: fixed;
-  inset: 0;
-  z-index: 11;
-  display: grid;
-  place-items: center;
-  padding: 0 7vw;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 1.1s ease;
-}
-.hint-center.show { opacity: 1; }
-/* 出现那一下让内文从 6px 下浮起来 —— 整层只有 opacity 渐变，
-   句子本身是「啪」一下钉在那儿的；求灯是个「灯亮了」的动作，
-   灯亮总得有个抬升的手感。位移做在 p 上，外层那层 opacity 不受影响，
-   收起的时候还是干干净净的渐隐。 */
-.hint-center p {
-  transform: translateY(6px);
-  transition: transform .5s var(--ease);
-}
-.hint-center.show p { transform: translateY(0); }
-
-.hint-center p {
-  max-width: 26em;
-  margin: 0;
-  padding: 1.05em 0;
-  text-align: center;
-  font-size: clamp(15px, 1.3vw, 19px);
-  line-height: 1.95;
-  letter-spacing: .07em;
-  color: #f6e8c8;
-  text-shadow: 0 2px 12px #000, 0 0 22px rgba(0, 0, 0, .9);
-  /* 上下两道描金细线，跟画廊的框一个语汇；不做实体盒子 ——
-     实体盒子看起来像又一个面板，而它只是一句话。
-     底下那层柔光不是为了好看：提示可能正好落在画面较亮的位置，
-     没有它，15px 的字压在画廊的暖色上会糊。 */
-  border-top: 1px solid rgba(215, 161, 90, .34);
-  border-bottom: 1px solid rgba(215, 161, 90, .34);
-  background: radial-gradient(ellipse 72% 135% at 50% 50%,
-    rgba(8, 6, 4, .9), rgba(8, 6, 4, .6) 58%, rgba(8, 6, 4, 0) 100%);
-}
+/* 这里原来有一层 .hint-center：求灯那句提示在屏幕正中浮一次再渐隐（z-index 11）。
+   2026-09-20 删了 —— 用户实报「提示的内容不明显，可以直接放在我们历史记录方框的上面，
+   但是不要把汤面挡住了」，而屏幕正中那一浮在手机上正好盖住汤面。
+   求灯的即时反馈现在由记录方框第一行那条 .hint-line 自己给（点亮那一下走 .lit 动画），
+   提示的位置只剩一个：记录方框顶部。 */
 
 /* 首次入馆：开卷遮罩落下后，一张分步规矩（四卡翻页，随时可跳过）。只出现一次。 */
 .tour {
@@ -2217,23 +2211,27 @@ html, body {
    （那句飘飘的金字 toast）也是 `display: none` —— 两条叠起来把求灯的出口全堵死了：
    手机上点求灯，状态行闪一下「掌灯……」，然后屏幕上什么都不会出现，
    而 `hintedSet` 已经把这一卷的「孤灯」扣掉了。实测（tools/hint-check.mjs）「hits=[]」。
-   现在把它当成记录条那条横带的**第二行**：常驻、能反复读、不占额外固定高度
-   （多出来的十几像素由 .frame-window 的 margin-top:auto 与 .read 的 margin-bottom:auto
-   对分吸收，所以「画卷 + 汤面」整体居中的关系不变）。 */
+
+   2026-09-20 再改一次位置：它原来是记录条那条横带的**最后一行**（埋在 chips 下面），
+   用户实报「提示的内容不明显，可以直接放在我们历史记录方框的上面」——
+   现在用 order:-1 排到**第一行**，就是记录方框的最上面那条。
+   高度仍然由 .frame-window 的 margin-top:auto 与 .read 的 margin-bottom:auto 对分吸收，
+   所以「画卷 + 汤面」整体居中的关系不变（hint-check 在用 A/B 钉这一条）。 */
 .stage.compact .hint-line {
-  display: block;
+  display: flex;
   flex: 1 0 100%;
-  /* 排到最后一行：在记录条那一行里，chips 和「排行榜」都在它前面，
-     不指定 order 的话 flexbox 会先给它整行、再把「排行榜」顶到第三行，白多出一行的高度。
-     （2026-09-20 求灯挪去底栏了，这条规则和它无关，别顺手删。） */
-  order: 9;
-  margin: 0;
-  /* 左侧留给灯芯（.hint-line 的 border + ::before），紧凑态也要那盏灯 */
-  padding: 0 0 0 10px;
+  /* 第一行：order 比 .meter / .ledger / 「排行榜」都小，flexbox 先给它整行。
+     （不指定 order 的话它会按 DOM 顺序排，虽然也在最前面，但「第一行」这件事
+     得写死在 CSS 里 —— 换卷/改 DOM 顺序时不许它悄悄漂到中间去。） */
+  order: -1;
+  margin: 0 0 3px;
+  padding: 5px 7px;
   font-size: 12px;
-  line-height: 1.55;
-  color: #f0c9a0;
+  line-height: 1.5;
+  gap: 6px;
 }
+.stage.compact .hint-line .wick { width: 11px; height: 11px; }
+.stage.compact .hint-line i { font-size: 10px; }
 /* 上面那条的选择器权重比 `.hint-line[hidden]` 高，灯灭时得靠这条把 hidden 拉回来 */
 .stage.compact .hint-line[hidden] { display: none; }
 

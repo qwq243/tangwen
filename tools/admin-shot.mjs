@@ -65,8 +65,20 @@ const PROBE = `(function(){
     hover: hovered,
     puzRows: q('#puzTable') ? q('#puzTable').querySelectorAll('tbody tr').length : -1,
     dayRows: q('#dayTable') ? q('#dayTable').querySelectorAll('tbody tr').length : -1,
+    // 模型调用那张卡：四格（判题 / 判题失败 / 求灯 / 求灯兜底）+ 口径一行 + 模型表
+    modTiles: q('#mods') ? [].slice.call(q('#mods').querySelectorAll('.mod')).map(function(e){
+      return { k: (e.querySelector('.k')||{}).textContent || '', v: (e.querySelector('.v')||{}).textContent || '' }; }) : [],
+    modNote: (q('#modNote')||{}).textContent || '',
+    modRows: q('#modTable') ? q('#modTable').querySelectorAll('tbody tr').length : -1,
+    modEmpty: !!(q('#modTable') && q('#modTable').querySelector('.empty')),
     vols: q('#vols') ? q('#vols').querySelectorAll('details').length : -1,
     volFirstTitle: q('#vols details .t') ? q('#vols details .t').textContent : '',
+    // 卷宗那一排分类 chip（全部 / 汤色三枚 / 难度三枚，带各自卷数）
+    volTags: q('#volTags') ? [].slice.call(q('#volTags').querySelectorAll('button')).map(function(b){
+      return { t: b.textContent, on: b.classList.contains('on'),
+               kind: b.dataset.soup !== undefined ? 'soup' : (b.dataset.diff !== undefined ? 'diff' : 'all') }; }) : [],
+    volSub: (q('#volSub')||{}).textContent || '',
+    volQuery: q('#volQ') ? q('#volQ').value : null,
     boardOpts: q('#boardPick') ? q('#boardPick').options.length : -1,
     boardRows: q('#boardTable') ? q('#boardTable').querySelectorAll('tbody tr').length : -1,
     pickVal: q('#boardPick') ? q('#boardPick').value : '',
@@ -97,6 +109,10 @@ async function run(v) {
     ws.addEventListener('message', (e) => { const m = JSON.parse(e.data); if (m.id && pending.has(m.id)) { pending.get(m.id)(m); pending.delete(m.id); } });
     await new Promise((r) => ws.addEventListener('open', r, { once: true }));
     const send = (m, p = {}) => new Promise((res, rej) => { const id = ++seq; pending.set(id, (x) => (x.error ? rej(new Error(m + ' ' + JSON.stringify(x.error))) : res(x.result))); ws.send(JSON.stringify({ id, method: m, params: p })); });
+    const ev = async (expression) => {
+      const res = await send('Runtime.evaluate', { expression, returnByValue: true });
+      return res && res.result ? res.result.value : undefined;
+    };
     await send('Page.enable'); await send('Runtime.enable');
 
     // 先要一个真 token：走登录接口，别在页面上模拟打字
@@ -152,10 +168,114 @@ async function run(v) {
       JSON.stringify(out.hover));
     ok(`${v.label} 分卷表有行`, out.puzRows > 0, `rows=${out.puzRows}`);
     ok(`${v.label} 近 7 日明细 7 行`, out.dayRows === 7, `rows=${out.dayRows}`);
+    ok(`${v.label} 模型调用四格都在（判题 / 判题失败 / 求灯 / 求灯兜底）`,
+      out.modTiles.length === 4 && out.modTiles.every((t) => t.k && t.v !== ''),
+      JSON.stringify(out.modTiles));
+    ok(`${v.label} 模型调用带口径一行`, /判题/.test(out.modNote) && /求灯/.test(out.modNote),
+      out.modNote.slice(0, 60));
+    /* 模型表：suit 造的假数据里有两个求灯模型，所以这里该是**真有行**，
+       而且占比加起来 ≈100%（只塞一个模型的话这一列永远 100%，等于没测）。 */
+    const modRows = await ev(`(function(){
+      var rows=[].slice.call(document.querySelectorAll('#modTable tbody tr'));
+      return rows.map(function(tr){ var td=tr.querySelectorAll('td');
+        return { model: td[0] ? td[0].textContent : '', n: td[1] ? td[1].textContent : '',
+                 pct: td[2] ? parseFloat(td[2].textContent) : 0 }; }); })()`);
+    ok(`${v.label} 模型表按模型分解（假数据里两个模型都在）`,
+      out.modRows >= 2 && modRows.every((r) => r.model && Number(r.n.replace(/,/g, '')) > 0),
+      JSON.stringify(modRows));
+    ok(`${v.label} 占比加起来 ≈100%`,
+      Math.abs(modRows.reduce((s, r) => s + r.pct, 0) - 100) <= 0.5,
+      `合计 ${modRows.reduce((s, r) => s + r.pct, 0).toFixed(1)}%`);
     ok(`${v.label} 卷宗核对列全了 ${VOLUMES} 卷`, out.vols === VOLUMES,
       `vols=${out.vols} 期望=${VOLUMES} 首卷=${out.volFirstTitle}`);
+    /* 分类 chips：一枚共用的「全部」+ 汤色三枚 + 难度三枚 = 7 枚，
+       默认停在「全部」上，各自带卷数（总和要等于全库卷数）。 */
+    ok(`${v.label} 卷宗分类七枚、默认停在「全部」`,
+      out.volTags.length === 7
+      && out.volTags.filter((t) => t.kind === 'all' && t.on).length === 1
+      && out.volTags.filter((t) => t.kind === 'soup').length === 3
+      && out.volTags.filter((t) => t.kind === 'diff').length === 3,
+      JSON.stringify(out.volTags.map((t) => t.t)));
+    const volCounts = out.volTags.filter((t) => t.kind !== 'all')
+      .map((t) => Number(String(t.t).replace(/\D+/g, '')));
+    ok(`${v.label} 分类 chip 上的卷数加起来 = ${VOLUMES}×2（汤色一组 + 难度一组，各是整库）`,
+      volCounts.reduce((s, x) => s + x, 0) === VOLUMES * 2,
+      `chip 数=${JSON.stringify(volCounts)}`);
     ok(`${v.label} 排行榜下拉有选项`, out.boardOpts > 20, `opts=${out.boardOpts}`);
     ok(`${v.label} 排行榜表自动装上了（进来看不用手点）`, out.boardRows > 0, `rows=${out.boardRows}`);
+
+    /* 卷宗核对的搜索与分类：真敲进去、真点一下。
+       44 卷摊开靠眼睛扫是核不了对的 —— 这两下就是用户要的那两件。 */
+    const volProbe = async () => ev(`(function(){
+      var q=function(s){return document.querySelector(s);};
+      var rows=[].slice.call(document.querySelectorAll('#vols details'));
+      var diffTags=function(d){
+        var t=[].slice.call(d.querySelectorAll('summary .tag')).filter(function(x){
+          return /^[浅中深]$/.test((x.textContent||'').trim()); });
+        return t.length ? t[0].textContent.trim() : ''; };
+      return { n: rows.length,
+               idx: rows.length ? (rows[0].querySelector('.idx')||{}).textContent : '',
+               allHit: window.__volWord ? rows.every(function(d){
+                 return (d.textContent||'').indexOf(window.__volWord) >= 0; }) : null,
+               soups: rows.map(function(d){
+                 var t=d.querySelector('.tag.soup'); return t ? t.textContent : ''; }),
+               diffs: rows.map(diffTags),
+               sub:(q('#volSub')||{}).textContent || '',
+               empty:!!q('#vols .empty') }; })()`);
+    const typeVol = async (text) => {
+      await ev(`(function(){ var e=document.getElementById('volQ');
+        e.value=${JSON.stringify(text)}; e.dispatchEvent(new Event('input',{bubbles:true})); return 1; })()`);
+      await sleep(250);
+    };
+
+    // 搜汤底里的词（只搜标题是不够的：核对的场景常常是「我记得有个词，在哪一卷来着」）
+    await ev(`window.__volWord = '丧尸'`);
+    await typeVol('丧尸');
+    let vv = await volProbe();
+    ok(`${v.label} 搜索命中汤底里的词，且命中的每一卷都真的含它`,
+      vv.n >= 1 && vv.n < VOLUMES && vv.allHit === true,
+      `n=${vv.n} allHit=${vv.allHit} sub=${vv.sub}`);
+    ok(`${v.label} 搜索时卷尾计数写成「N / ${VOLUMES} 卷」`, /\/\s*\d+\s*卷/.test(vv.sub), vv.sub);
+    const andCount = vv.n;
+    await typeVol('丧尸 电话');
+    vv = await volProbe();
+    ok(`${v.label} 连空格分词也能搜（「丧尸 电话」两个词都要在）`,
+      vv.n >= 1 && vv.n <= andCount, `AND：n=${vv.n} <= ${andCount}`);
+
+    await typeVol('');
+    let tags = (await ev(PROBE)).volTags;
+    const soupChip = tags.filter((t) => t.kind === 'soup')[0];
+    const soupName = String(soupChip.t).replace(/\d+/g, '');
+    const soupWant = Number(String(soupChip.t).replace(/\D+/g, ''));
+    await ev(`document.querySelector('#volTags button[data-soup="${soupName}"]').click()`);
+    await sleep(250);
+    vv = await volProbe();
+    ok(`${v.label} 点汤色分类只列这一类，且条数与 chip 上的数一致`,
+      vv.n === soupWant && vv.soups.every((s) => s === soupName),
+      `点「${soupName}」得 ${vv.n} 卷 / chip ${soupWant} / 首行 ${vv.soups[0]}`);
+
+    // 难度可以叠在汤色上（两类是并列的）。逐档试一遍：至少要有一档与刚选的汤色有交集 ——
+    // 否则「叠加」可能只是永远返回空表，而空表也「是子集」，什么也没证明。
+    let overlap = null;
+    for (const d of ['浅', '中', '深']) {
+      await ev(`document.querySelector('#volTags button[data-diff="${d}"]').click()`);
+      await sleep(200);
+      const x = await volProbe();
+      if (x.n > 0 && !overlap) overlap = { d, x };
+      await ev(`document.querySelector('#volTags button[data-diff="${d}"]').click()`);   // 再点一下取消
+      await sleep(150);
+    }
+    ok(`${v.label} 汤色 + 难度能叠加（有交集，且落下来的每一卷两头都对得上）`,
+      !!overlap && overlap.x.soups.every((s) => s === soupName)
+      && overlap.x.diffs.every((d) => d === overlap.d),
+      overlap ? `${soupName}+${overlap.d} = ${overlap.x.n} 卷` : `三档难度与「${soupName}」都没有交集`);
+
+    await ev(`document.querySelector('#volTags button[data-all="1"]').click()`);
+    await sleep(250);
+    vv = await volProbe();
+    ok(`${v.label} 点「全部」把两类一起清掉，回到 ${VOLUMES} 卷`, vv.n === VOLUMES, `n=${vv.n}`);
+    ok(`${v.label} 清掉之后卷号还是全库的号（01 起）`, vv.idx === '01', `首行 idx=${vv.idx}`);
+
     ok(`${v.label} 启动没留下异常记号`, out.bootErr === '', out.bootErr);
     ok(`${v.label} 没有横向溢出`, out.overflowX <= 1, `overflowX=${out.overflowX} vw=${out.vw}`);
 

@@ -58,6 +58,17 @@
     <div class="chart-box" id="chartBox"></div>
   </div>
 
+  <div class="card">
+    <h2>模型调用<span class="sub" id="modelSub"></span></h2>
+    <!-- 两条链路分开看（口径见 README「模型调用统计」一节）：
+         判题 = TypeSafe + jev-latest，每次提问必发一次，失败另记一笔；
+         求灯 = Workers AI 免费额度，按「这一句是谁答的」分开记，退到兜底单独一档。
+         这些数都由接口自己记（server.py / Worker 的 bump_track），前端只读。 -->
+    <div class="mods" id="mods"></div>
+    <div class="mod-note" id="modNote"></div>
+    <div id="modTable"></div>
+  </div>
+
   <div class="cols">
     <div class="card">
       <h2>分卷<span class="sub" id="puzSub"></span></h2>
@@ -81,13 +92,28 @@
   </div>
 
   <div class="card">
-    <h2>卷宗核对<span class="sub" id="volSub"></span></h2>
+    <div class="vol-head">
+      <h2>卷宗核对<span class="sub" id="volSub"></span></h2>
+      <div class="grow"></div>
+      <!-- 搜的是这一卷的**全部正文**：卷名 / 卷号（id）/ 汤面 / 汤底 / 关键点的标题与问法。
+           空格分开的多个词是「都要命中」（AND），跟正馆那个搜剧本同一套手感。
+           分类那排 chip 由 admin.js 生成（含每类的卷数）。 -->
+      <div class="vol-find">
+        <input id="volQ" type="search" autocomplete="off" spellcheck="false" aria-label="搜卷宗"
+               placeholder="搜卷名 / 卷号 / 汤面 / 汤底 / 关键点" />
+        <button class="btn tiny" id="volClear" type="button" hidden aria-label="清空搜索">×</button>
+      </div>
+    </div>
+    <div class="vol-tags" id="volTags"></div>
     <div class="vols" id="vols"></div>
   </div>
 
   <div class="foot">
     <b>数据口径</b>　日期按 Asia/Shanghai 切。访问＝首页开卷成功一次；访客按浏览器本地随机 uid 去重；
     新增＝该 uid 第一次出现。提问 / 求灯 / 结案都按卷记一次。<br />
+    <b>模型调用</b>　判题＝TypeSafe 一次提问一次调用（<span class="mono">ask</span>，失败另记
+    <span class="mono">judgefail</span>）；求灯＝Workers AI 免费额度，按「这句是谁答的」分开记
+    （<span class="mono">day.m</span>），链上全挂回兜底记 <span class="mono">hintfallback</span>。<br />
     <b>不记什么</b>　不存 IP、不存 UA、不存问题原文、不存任何能对应到人的东西。uid 是前端随机串。<br />
     <b>存在哪</b>　Cloudflare KV，键前缀 <span class="mono">st:d:</span>（每日计数）、
     <span class="mono">st:u:</span>（当日 uid，60 天自清）、<span class="mono">st:f:</span>（首次访问）。

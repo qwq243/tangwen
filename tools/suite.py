@@ -41,9 +41,10 @@ def admin_data_for(port: int) -> str:
 # (文件名, 额外参数)，URL 会拼在最前面
 SUITE = [
     ("tour-check.mjs", []),   # 首访分步引导：本探针不注入 seed，引导本身就是被测对象
+    ("audio-check.mjs", []),  # 音效：离开页面静音 / 不变单调 / 高频节流
     ("mobile-check.mjs", ["390", "844"]),
     ("hint-check.mjs", ["390", "844"]),
-    ("finder-hint-check.mjs", []),  # 点搜索框出分类 + 求灯居中浮层（自带画廊/紧凑两段）
+    ("finder-hint-check.mjs", []),  # 点搜索框出分类 + 求灯那一下（提示在记录方框第一行、不压汤面）
     ("mobile-input-check.mjs", ["390", "844"]),  # 点输入框不能丢焦点（键盘弹起时布局不能把焦点顶掉）
     ("solve-check.mjs", ["390", "844"]),  # 结案之后：结算落库 / 榜上有我 / 表停
     ("track-check.mjs", []),  # 真问一句 -> 后台当场记到（含「不会记双」）；额外参数在 main() 里补
@@ -68,22 +69,31 @@ def seed_admin_data(data_dir: str) -> None:
     rnd = random.Random(20260920)
     base = datetime.date.today()
     pids = ["jumper", "song", "exam", "room"]
+    # 求灯模型表：主力 + 偶发的备胎。后台那张「模型调用」表要按这个分解算占比，
+    # 只塞一个模型的话「占比」永远是 100%，那一列等于没测。
+    hint_models = ["@cf/meta/llama-3.3-70b-instruct-fp8-fast", "@cf/mistralai/mistral-small-3.1-24b-instruct"]
     days = {}
     for i in range(34):
         d = (base - datetime.timedelta(days=i)).isoformat()
         pv = rnd.randint(6, 80)
+        hint = rnd.randint(0, 14)
+        back = rnd.randint(0, 2)                  # 退到备胎的那几句
+        fall = 1 if rnd.random() < 0.08 else 0     # 全挂回兜底（少数几天）
         days[d] = {
             "c": {
                 "pv": pv,
                 "uv": max(1, int(pv * rnd.uniform(0.5, 0.85))),
                 "new": rnd.randint(0, 6),
                 "ask": rnd.randint(4, 120),
-                "hint": rnd.randint(0, 14),
+                "hint": hint + back + fall,
                 "solve": rnd.randint(0, 11),
                 "give": rnd.randint(0, 3),
+                "judgefail": 1 if rnd.random() < 0.06 else 0,
+                "hintfallback": fall,
             },
             "p": {pid: {"ask": rnd.randint(0, 24), "hint": rnd.randint(0, 3),
                         "solve": rnd.randint(0, 4)} for pid in pids},
+            "m": {hint_models[0]: hint, hint_models[1]: back},
         }
     with open(os.path.join(data_dir, "stats.json"), "w", encoding="utf-8") as f:
         json.dump({"days": days, "seen": {}, "first": {}, "rl": {}}, f, ensure_ascii=False)

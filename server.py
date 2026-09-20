@@ -238,6 +238,21 @@ def typesafe(state: dict, questions: dict) -> tuple[dict, float]:
     return body, (time.perf_counter() - t0) * 1000
 
 
+# 结案口径（SOLVE-RULE）：**结案只认「玩家把汤底说出来了」**，不认「关键点问齐了」。
+#
+# 为什么改（2026-09-20 用户实报）：《柜中的孩子》里玩家一路问下来，最后一问把最后一个
+# 关键点问到了，于是当场结案 —— 可他自己并没有想通（连「平行世界」都没往那儿想）。
+# 关键点问齐只说明**料凑够了**，说没说圆是另一回事。问齐之后玩家接着问就行，
+# 卡住了去求灯；那条路比「替他结案」诚实。
+#
+# 三个数就是这条口径的全部，`functions/api/[[path]].js` 的 SOLVE_RULE 必须同值
+# —— 改一边会被 tools/cast-check.py 的 parity 当场逮住（跑 tools/judge-check.py 也会带上）。
+SOLVE_RULE = {
+    "full_guess": 0.75,     # is_full_guess：这一句是在把汤底讲出来，而不是在问一个点
+    "guess_correct": 0.78,  # guess_correct：讲出来的版本抓住了核心机制
+    "close_floor": 0.45,    # 整段猜过但没说到点子上：低于这条线就不假装「接近了」
+}
+
 BASE_QUESTIONS = {
     "trying_to_extract": {
         "type": "noul",
@@ -245,11 +260,17 @@ BASE_QUESTIONS = {
     },
     "is_full_guess": {
         "type": "noul",
-        "instructions": "玩家是在陈述完整汤底/核心机制，而不是在问一个探测性是非题？",
+        "instructions": (
+            "玩家是在把整个汤底 / 核心机制**讲出来**（陈述，不是在问），"
+            "而不是在问一个探测性是非题？自己的推理串成一段话、或一句话点破核心机制都算。"
+        ),
     },
     "guess_correct": {
         "type": "noul",
-        "instructions": "若当作完整猜测：是否已经抓住汤底核心机制？探测题即使方向对也不算猜中。",
+        "instructions": (
+            "若当作完整猜测：是否已经抓住汤底核心机制？机制说对了就算说中，"
+            "个别细节没提到不扣分；探测题即使方向对也不算猜中。"
+        ),
     },
     "host_answer": {
         "type": "choice",
@@ -394,7 +415,11 @@ def judge(puzzle: dict, utterance: str, history: list, unlocked: list | None = N
     choice = pick_host(host.get("choice") or "unanswerable", probabilities)
     confidence = float(host.get("confidence") or 0)
 
-    if full_guess >= 0.75 and guess_ok >= 0.78:
+    guess_hit = (
+        full_guess >= SOLVE_RULE["full_guess"] and guess_ok >= SOLVE_RULE["guess_correct"]
+    )
+    if guess_hit:
+        # 整段说对了：关键点按定义全算问到（那排 chips 是进度条，不再决定结案）
         found.update(k["id"] for k in keys)
     else:
         for key in keys:
@@ -403,7 +428,9 @@ def judge(puzzle: dict, utterance: str, history: list, unlocked: list | None = N
             if score >= 0.55 and choice in ("yes", "no", "both", "close", "partial"):
                 found.add(key["id"])
 
-    solved = bool(keys) and all(k["id"] in found for k in keys)
+    # 结案 = 猜出来了（SOLVE_RULE）。**关键点问齐不再是结案判据** ——
+    # 问齐只是「料凑够了」，玩家没说圆就接着问 / 去求灯，别替他揭底。
+    solved = bool(keys) and guess_hit
     if extract >= 0.85 and not solved:
         verdict = "refuse"
         label = "不能剧透"
@@ -411,9 +438,13 @@ def judge(puzzle: dict, utterance: str, history: list, unlocked: list | None = N
     elif solved:
         verdict = "solved"
         label = "结案"
-        say = "关键点已经齐了。"
+        say = "说对了。汤底封卷。"
     else:
         verdict = choice if choice in HOST_LABELS else "unanswerable"
+        # 整段猜过、但没说到点子上：落「接近了」比落「是 / 不是」贴切 ——
+        # 玩家讲的是故事，不是一个是非命题。差得太远（低于 close_floor）就不假装接近。
+        if full_guess >= SOLVE_RULE["full_guess"] and guess_ok >= SOLVE_RULE["close_floor"]:
+            verdict = "close"
         label = HOST_LABELS.get(verdict, HOST_LABELS["unanswerable"])
         say = {
             "yes": "是。",
@@ -764,7 +795,7 @@ def make_hint(puzzle: dict, history: list, unlocked: list, prev: str = "") -> tu
 # 提问/求灯/结案全是 0，偏偏访问量还在涨 —— 看起来像「后台坏了」，其实是
 # 账本抄在一份可能过期的副本上。服务端看得见的事就别外包给前端。
 TRACK_CLIENT_KINDS = ("pv",)          # 客户端还能报的
-BUMP_KINDS = ("ask", "hint", "solve", "give")   # 服务端自己数的
+BUMP_KINDS = ("ask", "hint", "solve", "give", "judgefail")   # 服务端自己数的
 BUMP_PUZZLE_KINDS = ("ask", "hint", "solve")    # 其中要记到分卷明细的
 TRACK_MAX_EVENTS = 240
 SEEN_TTL = 60 * 24 * 60 * 60
@@ -844,11 +875,19 @@ def apply_track(date: str, events: list, uid: str) -> bool:
         return is_new
 
 
-def bump_track(kind: str, pid: str = "") -> None:
-    """接口自己记一笔（ask / hint / solve / give）。
+def bump_track(kind: str, pid: str = "", model: str | None = None) -> None:
+    """接口自己记一笔（ask / hint / solve / give / judgefail）。
 
     日期在这里现算，不接调用方传进来的 —— 服务是常驻的，跨零点那一刻要用当天的。
-    出错只打一行日志：埋点坏了不能影响玩，更不能把判题结果吞掉。"""
+    出错只打一行日志：埋点坏了不能影响玩，更不能把判题结果吞掉。
+
+    `model` 是「这一次模型调用落在谁身上」（**只有求灯用得上**）：
+      - 传模型名（make_hint 的第二个回值）→ 当天的 day["m"][模型] += 1；
+      - 传空串 → 链上全挂、回了兜底 → 记 `hintfallback`（这一档要单独看得见：
+        线上表现只是「求灯永远同一句话」，不记就查不出来）。
+    判题那条**不传**：判题模型是写死的 jev-latest（见 TYPESAFE_MODEL），
+    每次提问必发一次判题，所以「判题调用次数」就是 ask 那笔，失败另记 `judgefail`。
+    两边合起来才是「模型调用」的账，口径写在 README 的「模型调用统计」一节。"""
     if kind not in BUMP_KINDS:
         return
     try:
@@ -862,6 +901,12 @@ def bump_track(kind: str, pid: str = "") -> None:
             if pid and kind in BUMP_PUZZLE_KINDS:
                 row = day["p"].setdefault(pid, {})
                 row[kind] = int(row.get(kind, 0)) + 1
+            if model is not None:
+                if model:
+                    tally = day.setdefault("m", {})
+                    tally[model] = int(tally.get(model, 0)) + 1
+                else:
+                    day["c"]["hintfallback"] = int(day["c"].get("hintfallback", 0)) + 1
             save_stats(data)
     except Exception as exc:
         print("[track] %s 没记上：%s" % (kind, exc), flush=True)
@@ -926,10 +971,14 @@ def admin_login(ip: str, body: dict) -> tuple[int, dict]:
 def collect_stats(days: int) -> dict:
     data = load_stats()
     dates = [shanghai_date(-i) for i in range(days - 1, -1, -1)]
-    keys = ("pv", "uv", "new", "ask", "hint", "solve", "give")
+    # judgefail（判题调用失败）与 hintfallback（求灯退到兜底）跟别的计数一样按天走，
+    # 后台「模型调用」那张卡与折线都读它们。day["m"]（按模型的求灯次数）不进 series ——
+    # 它是「谁答的」的分解，没有按天的趋势可言，单独聚合给 models。
+    keys = ("pv", "uv", "new", "ask", "hint", "solve", "give", "judgefail", "hintfallback")
     series = []
     totals = {k: 0 for k in keys}
     per_puzzle: dict = {}
+    per_model: dict = {}
     for date in dates:
         day = data["days"].get(date) or {}
         counts = day.get("c") or {}
@@ -942,6 +991,8 @@ def collect_stats(days: int) -> dict:
             acc = per_puzzle.setdefault(pid, {"ask": 0, "hint": 0, "solve": 0})
             for key in ("ask", "hint", "solve"):
                 acc[key] += int((value or {}).get(key, 0) or 0)
+        for model, count in (day.get("m") or {}).items():
+            per_model[model] = per_model.get(model, 0) + int(count or 0)
     puzzles = [
         {
             "id": pid,
@@ -953,8 +1004,12 @@ def collect_stats(days: int) -> dict:
         for pid, value in per_puzzle.items()
     ]
     puzzles.sort(key=lambda r: (-r["ask"], -r["solve"]))
+    models = [{"model": m, "n": n} for m, n in per_model.items() if n > 0]
+    models.sort(key=lambda r: (-r["n"], r["model"]))
     return {"ok": True, "today": shanghai_date(0), "days": series, "totals": totals,
-            "puzzles": puzzles, "window": days}
+            "puzzles": puzzles, "models": models, "window": days,
+            # 判题模型是写死的常量（十档阈值都照它量的），摆出来给后台核对
+            "judge_model": TYPESAFE_MODEL}
 
 
 _GZIP_CACHE: dict = {}
@@ -1361,9 +1416,14 @@ class Handler(SimpleHTTPRequestHandler):
                 )
             except urllib.error.HTTPError as e:
                 detail = e.read().decode("utf-8", errors="replace")[:400]
+                # 判题调用失败也单独记一笔：ask 是「玩家问了几次」，
+                # judgefail 是「这几次模型调用里挂了几次」—— 后者突然涨起来
+                # 就是密钥/额度/上游出事了（线上表现只是「问什么都答不了」）。
+                bump_track("judgefail", pid)
                 self._json(502, {"ok": False, "error": f"typesafe {e.code}", "detail": detail})
                 return
             except Exception as e:
+                bump_track("judgefail", pid)
                 self._json(500, {"ok": False, "error": str(e)})
                 return
             if result.get("solved"):
@@ -1436,7 +1496,6 @@ class Handler(SimpleHTTPRequestHandler):
             if not puzzle:
                 self._json(404, {"ok": False, "error": "puzzle not found"})
                 return
-            bump_track("hint", puzzle["id"])
             history = body.get("history") or []
             unlocked = body.get("unlocked") or []
             prev = body.get("prev") or ""
@@ -1446,6 +1505,11 @@ class Handler(SimpleHTTPRequestHandler):
                 unlocked if isinstance(unlocked, list) else [],
                 prev if isinstance(prev, str) else "",
             )
+            # 求灯这一笔带模型一起记（一次读-改-写）：model 非空 → 当天那个模型 +1，
+            # 空串（链上全挂、回了兜底）→ hintfallback +1。见 bump_track 的说明。
+            # 记账放在 make_hint 之后：只有它回来了才知道该记谁。
+            # make_hint 自己吞掉每个模型的异常，正常不抛；真抛了这一次不记账（宁少勿重）。
+            bump_track("hint", puzzle["id"], model=model)
             # model 跟线上对齐：实际用了链里哪个模型就报哪个，兜底时是空串
             self._json(200, {"ok": True, "hint": hint, "model": model})
             return

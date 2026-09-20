@@ -140,7 +140,30 @@ try {
 
   await send('Emulation.setDeviceMetricsOverride', { width: W, height: H, deviceScaleFactor: 1, mobile: W < 800 });
   await send('Page.navigate', { url: URL_ + '?_cb=' + Date.now() });
-  await sleep(4200);
+
+  /* 等页面**真的就绪**，判据是 app.js 自己写的那个信号：`#bootCap` 变成「共 N 卷」
+     —— 它只在 `/api/puzzles` 回来之后才写（web/app.js 的 hideBoot 那一段）。
+
+     为什么必须有这一步（2026-09-20 全套里假红过一次）：`#title` 的初值是 HTML 里写死的
+     「妹妹的房间」，`#typed` 更是静态标签 —— 拿它们当「页面开起来了」是假绿。
+     套件里连着跑一串 headless Chrome 时会遇到某个实例的 `/api/puzzles` 不 settle
+     （`finder-hint-check.mjs` 记过同一类），这时 app.js 还没跑完初始化，
+     **submit 监听都没挂上**，于是下面第一问量出来就是「asks=0 印章=""」，
+     后面七条跟着一起红 —— 看着像记账坏了，其实是页面还没起来。
+     只重试「没就绪」，不重试任何断言。 */
+  const ready = async (tries) => {
+    for (let i = 0; i < tries; i++) {
+      const cap = await ev("(document.getElementById('bootCap')||{}).textContent || ''");
+      if (/共\s*\d+\s*卷/.test(cap || '')) return true;
+      await sleep(300);
+    }
+    return false;
+  };
+  if (!(await ready(50))) {
+    console.log('    （首次进入 15 秒没就绪：/api/puzzles 没回来 —— 重载一次再等）');
+    await send('Page.reload');
+    if (!(await ready(60))) { ok('页面开起来了', false, '等待 /api/puzzles 超时（布局初始化没跑完）'); }
+  }
 
   const boot = await ev(`(function(){ return { title: (document.getElementById('title')||{}).textContent,
     typed: !!document.getElementById('typed') }; })()`);

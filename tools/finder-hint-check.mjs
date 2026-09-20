@@ -1,14 +1,16 @@
-// 搜剧本「点一下出分类」+ 求灯「居中浮一次再渐隐」的自查。
+// 搜剧本「点一下出分类」+ 求灯「提示落在记录方框第一行、当场亮一记」的自查。
 //
 // 为什么单开一条，跟 finder-timer-check / hint-check 不重叠：
 //   finder-timer-check 测的是「敲字之后」那条路（它自己先 el.value= 再派 input 事件），
-//   hint-check 测的是 `.hint-line` 与 `.hint` 两个出口。这两条新行为谁都没覆盖：
+//   hint-check 测的是 `.hint-line` 这个出口「看不看得见、刷新后还在不在」。这两条谁都没覆盖：
 //
 //   1. 点一下搜索框（或放大镜那枚图标），下面那两行分类（汤色 / 难度）就要出来。
 //      以前只有敲字 / 按 K 才出来，光点一下什么都不发生 —— 没人知道下面有分类可挑。
-//   2. 求灯那句提示除了记录条里常驻的 `.hint-line`，还要在屏幕正中浮一次、自己渐隐。
-//      这条在紧凑态才是重点：那里 `.hint` 是 display:none，手机上点完求灯的即时
-//      反馈全靠它（hint-check 只保证「看得到」，不保证「点下去当场有反应」）。
+//   2. 求灯那句提示**放在哪儿、点下去当场有没有反应**。
+//      2026-09-20 用户实报：「提示的内容不明显，可以直接放在我们历史记录方框的上面，
+//      但是不要把汤面挡住了」。原来它是屏幕正中一件浮层（#hintCenter）—— 手机上正好压着
+//      汤面 —— 现在删了，提示只在记录方框第一行，点下去靠那一行自己亮一记（.lit）。
+//      这里就钉三条：**在记录方框第一行**、**不压汤面**、**点下去真的亮**。
 //
 // ⚠️ 点搜索框**必须用真鼠标事件**（CDP 的 Input.dispatchMouseEvent）。
 //    `el.click()` 不会让输入框获得焦点，于是 focus 那条路根本不走 ——
@@ -43,8 +45,9 @@ mkdirSync(OUT, { recursive: true });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const PORT = await freePort();
 
-/* 一个探针里要量的东西都在这儿。centered 用的是**那句提示所在的元素**的中心
-   vs 视口中心 —— 不是「大概在中间」，是两轴偏差 ≤ 2px。 */
+/* 一个探针里要量的东西都在这儿。提示那几条量的是**位置关系**：
+   它在记录方框里、在记录列表之上、跟汤面与底栏都不相交 —— 「别挡住汤面」是用户的原话，
+   所以这里不是「大概没挡」，是矩形相交判定。 */
 const PROBE = `(function(){
   function cs(e){ return getComputedStyle(e); }
   function vis(e){ var s=cs(e);
@@ -54,27 +57,40 @@ const PROBE = `(function(){
   function box(sel){ var e=document.querySelector(sel); if(!e) return null; var r=e.getBoundingClientRect();
     return {shown:vis(e)&&op(e)>0.05, op:+op(e).toFixed(2), disp:cs(e).display,
             x:Math.round(r.x), y:Math.round(r.y), w:Math.round(r.width), h:Math.round(r.height),
-            text:(e.textContent||'').slice(0,48)}; }
+            bottom:Math.round(r.bottom), text:(e.textContent||'').slice(0,48)}; }
+  function rect(e){ return e? e.getBoundingClientRect():null; }
+  function hit(a,b){ return !!(a&&b&&a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top); }
   var list=document.getElementById('findList');
   var ftags=document.querySelector('#findList li.ftags');
   var soupBtns=[].slice.call(document.querySelectorAll('#findList button[data-soup]'));
   var diffBtns=[].slice.call(document.querySelectorAll('#findList button[data-diff]'));
   var rows=[].slice.call(document.querySelectorAll('#findList li[data-i]'));
-  var hc=document.getElementById('hintCenter');
-  var hcP=hc? hc.querySelector('p') : null;
-  var hcR=hcP? hcP.getBoundingClientRect() : null;
-  var mic=document.querySelector('.mic');
+  var line=document.getElementById('hintLine');
+  var read=document.querySelector('.read');
+  var dossier=document.querySelector('.dossier');
   var dock=document.querySelector('.dock');
-  var dR=dock? dock.getBoundingClientRect():null;
-  /* 底栏那枚麦克风的中心上，最顶上的元素是谁 —— 用来证明居中浮层没有挡住它 */
-  var atMic = (function(){ if(!mic) return null; var r=mic.getBoundingClientRect();
-    var el=document.elementFromPoint(Math.round(r.x+r.width/2), Math.round(r.y+r.height/2));
-    if(!el) return {inOverlay:null, what:'null'};
-    /* 麦克风中心最顶上的那个元素，是不是落在那件居中浮层里 ——
-       是的话就说明浮层挡住了底栏（它 pointer-events:none，本不该有任何东西压在上面）。
-       SVG 的 className 是 SVGAnimatedString 不是字符串，所以走 closest/getAttribute。 */
-    return { inOverlay: !!(el.closest && el.closest('#hintCenter')),
-             what: (el.getAttribute && el.getAttribute('class')) || el.id || el.tagName }; })();
+  var ledger=document.getElementById('ledger') || document.querySelector('.ledger');
+  /* 屏幕上写着这句提示的每一件（只留最深的那个元素，免得把 body / .stage 也算进来） */
+  function places(needle){
+    var out=[];
+    var all=document.querySelectorAll('body *');
+    for (var i=0;i<all.length;i++){
+      var e=all[i], t=e.textContent||'';
+      if (t.indexOf(needle)<0) continue;
+      if (e.classList && e.classList.contains('sr-verdict')) continue;   // 读屏专用那件不算看得见
+      var deeper=false;
+      for (var j=0;j<e.children.length;j++){ if((e.children[j].textContent||'').indexOf(needle)>=0){ deeper=true; break; } }
+      if (deeper) continue;
+      if (!vis(e)) continue;
+      var r=e.getBoundingClientRect();
+      out.push({cls:(e.className||e.tagName)+'', x:Math.round(r.x), y:Math.round(r.y),
+                w:Math.round(r.width), h:Math.round(r.height),
+                inLine: !!(e.closest && e.closest('#hintLine')),
+                overRead: hit(r, rect(read)), overDock: hit(r, rect(dock)) });
+    }
+    return out;
+  }
+  var lineR = rect(line);
   return {
     cls:(document.querySelector('.stage')||{}).className, vw:innerWidth, vh:innerHeight,
     listHidden:list? list.hidden : null,
@@ -89,14 +105,19 @@ const PROBE = `(function(){
       var sp=li.querySelector('i.sp'); return sp && sp.textContent==='清汤'; }),
     inputValue: (document.getElementById('findInput')||{}).value,
     inputFocused: document.activeElement===document.getElementById('findInput'),
-    hintCenter: box('#hintCenter'),
     hintLine: box('#hintLine'),
-    hintToast: box('#hint'),
-    /* 提示文字所在元素的中心 vs 视口中心 */
-    dx: hcR? Math.round(hcR.x + hcR.width/2 - innerWidth/2) : null,
-    dy: hcR? Math.round(hcR.y + hcR.height/2 - innerHeight/2) : null,
-    atMic: atMic,
-    dockShown: !!dR && vis(dock),
+    /* 那句提示自己的那一格。**不要拿 #hintLine 的 textContent 去比这句话** ——
+       那条牌子上还有一枚小灯图标和「灯语」两个字（常设的），提示正文在 #hintText 里。 */
+    hintText: (document.getElementById('hintText')||{}).textContent || '',
+    /* 提示行与三块地方的关系：在记录方框里、在记录列表之上、不碰汤面、不碰底栏 */
+    inDossier: !!(lineR && hit(lineR, rect(dossier))),
+    aboveLedger: !!(lineR && rect(ledger) && lineR.bottom <= rect(ledger).top + 1),
+    overRead: !!(lineR && hit(lineR, rect(read))),
+    overDock: !!(lineR && hit(lineR, rect(dock))),
+    lit: !!(line && line.classList.contains('lit')),
+    anims: (line && line.getAnimations) ? line.getAnimations().map(function(a){ return a.animationName || '?'; }) : null,
+    places: places(${JSON.stringify(MARK)}),
+    dockShown: !!rect(dock) && vis(dock),
     errs:(window.__errs||[]).slice(0,4)
   };
 })()`;
@@ -214,11 +235,6 @@ const lamp = async (want) => {
   const on = await ev("document.getElementById('lamp').getAttribute('aria-pressed')==='true'");
   if (on !== want) { await ev("document.getElementById('lamp').click()"); await sleep(300); }
 };
-const askHint = async () => {
-  await ev("document.getElementById('hintAsk').click()");
-  for (let i = 0; i < 24; i++) { await sleep(250); if (await ev("document.getElementById('hintLine').textContent.length>0")) break; }
-  await sleep(300);
-};
 
 await size(W, H, false);
 await send('Page.navigate', { url: URL + '?_cb=' + Date.now() });
@@ -302,41 +318,55 @@ check(r.listHidden === false, '列表还在（没有被收起）');
    所以这里该还是那 3 卷，不是 44。 */
 check(r.rowCount === 3, '筛着的「清汤」保留着（这是刻意的，再按 K 回来还是这一类）', `${r.rowCount} 条`);
 
-console.log('\n=== 4. 画廊态：求灯的居中展示 ===');
+console.log('\n=== 4. 画廊态：求灯那一下 —— 提示落在记录方框第一行，且不压汤面 ===');
 await lamp(true);
-await askHint();
+/* 点下去那一下的即时反馈靠的是 .lit 那一记动画，而动画只有 1.4s ——
+   所以这一小段不能用 askHint()（它要等文本 + 300ms，慢机器上就错过了），
+   自己点、自己每 100ms 扫一次。 */
+await ev("document.getElementById('hintAsk').click()");
+let lit = null;
+for (let i = 0; i < 30; i++) {
+  await sleep(100);
+  const s = await ev(`(function(){ var e=document.getElementById('hintLine');
+    return { lit: !!(e && e.classList.contains('lit')), text: e? e.textContent : '',
+             anims: (e && e.getAnimations) ? e.getAnimations().map(function(a){ return a.animationName||'?'; }) : null }; })()`);
+  if (s && s.lit) { lit = s; break; }
+}
 r = await ev(PROBE);
-console.log(`  hintCenter=${JSON.stringify(r.hintCenter)}  偏差 dx=${r.dx} dy=${r.dy}`);
-check(!!r.hintCenter && r.hintCenter.shown, '居中的那件浮层出现了');
-check((r.hintCenter.text || '').indexOf(MARK) >= 0, '它写的正是那句提示', r.hintCenter.text);
-check(Math.abs(r.dx) <= 2 && Math.abs(r.dy) <= 2, '真的在屏幕正中（两轴偏差 ≤ 2px）', `dx=${r.dx} dy=${r.dy}`);
-check(r.hintLine.shown === true, '常驻那行 .hint-line 也在（没有二选一）');
-await shotTo('newui_3_gallery_hint_center.png');
+console.log(`  hintLine=${JSON.stringify(r.hintLine)}`);
+console.log(`  在记录方框里=${r.inDossier} 在记录列表之上=${r.aboveLedger} 压汤面=${r.overRead} 压底栏=${r.overDock}`);
+console.log(`  亮过=${r.lit} 动画=${JSON.stringify(r.anims)} 这句提示出现在 ${r.places.length} 处`);
+check(!!r.hintLine && r.hintLine.shown, '提示行出现了');
+check(r.hintText.indexOf(MARK) >= 0, '它写的正是那句提示', r.hintText);
+check(!!lit, '点下去当场亮一记（.lit 动画，不是静静冒出来）', JSON.stringify(lit && lit.anims));
+check(r.inDossier === true, '提示在记录方框里面（用户要的位置：方框上面那条）');
+check(r.aboveLedger === true, '而且排在问答记录**上面**（不是埋在记录底下）');
+check(r.overRead === false, '提示不压汤面（这是用户原话里那条硬约束）');
+check(r.overDock === false, '提示不压底栏（输入条和麦克风照旧能点）');
+await shotTo('newui_3_gallery_hint_line.png');
 
-console.log('\n=== 5. 画廊态：不挡底栏、点一下就收、几秒后自己渐隐 ===');
-check(r.atMic && r.atMic.inOverlay === false,
-  '居中浮层没挡住底栏（麦克风中心那一点不落在浮层里）', `atMic=${JSON.stringify(r.atMic)}`);
-await ev(`(function(){ document.body.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true})); return 1; })()`);
-await sleep(1400);
+console.log('\n=== 5. 画廊态：这句话只出现在一个地方（浮层删干净了）===');
+check(r.places.length === 1, '屏幕上写着这句提示的只有一件', JSON.stringify(r.places.map((p) => p.cls)));
+check(r.places.every((p) => p.inLine && !p.overRead && !p.overDock),
+  '那一件就是记录方框里的提示行，且既没压汤面也没压底栏', JSON.stringify(r.places));
+check(r.dockShown === true, '底栏照常在（没被顶掉）');
+await sleep(4000);
 r = await ev(PROBE);
-check(r.hintCenter.op <= 0.05, '点一下屏幕就收掉（它是通知不是面板）', `op=${r.hintCenter.op}`);
-check(r.hintLine.shown === true, '收掉的是浮层，常驻那行还在');
-
-await askHint();
-r = await ev(PROBE);
-check(r.hintCenter.op > 0.5, '再求一次还能再浮（不是一次性）', `op=${r.hintCenter.op}`);
-await sleep(7000);
-r = await ev(PROBE);
-console.log(`  7 秒后 op=${r.hintCenter.op} toast=${r.hintToast.disp} line=${r.hintLine.shown}`);
-check(r.hintCenter.op <= 0.05, '几秒后自己渐隐（不用手动关）', `op=${r.hintCenter.op}`);
-check(r.hintLine.shown === true, '渐隐之后常驻那行还在（提示没丢）');
+check(r.places.length === 1, '几秒后提示还在（它是常驻件，不是一闪而过的浮层）',
+  JSON.stringify(r.places.map((p) => p.cls)));
 
 console.log('\n=== 6. 紧凑态 390×640：分类要出得来 ===');
+/* 先把搜索收起再切紧凑态。上面第 3 步点开过搜索框，`.finder` 一直是展开的
+   （原来是被「点屏幕收提示浮层」那一下顺带关掉的，那件浮层已经删了）——
+   带着卡片态切过去的话，紧凑态那枚放大镜是 display:none，`realClick` 会等不到它。 */
+await ev("window.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape'}))");
+await sleep(400);
 await size(COMPACT_W, COMPACT_H, true);
 await sleep(1500);
 r = await ev(PROBE);
 console.log(`  ${r.cls}`);
 check(/compact/.test(r.cls || ''), '确实进了紧凑态', r.cls);
+check(r.listHidden !== false, '切进紧凑态时搜索是收着的（放大镜那枚点得到）', `listHidden=${r.listHidden}`);
 
 // 紧凑态搜索收成放大镜，点开才是浮层
 await ev("document.getElementById('findInput').blur()");
@@ -358,23 +388,25 @@ check(r.rowCount === 44, '点「全部」复位成整库', `${r.rowCount} 条`);
 await ev("window.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape'}))");
 await sleep(400);
 
-console.log('\n=== 7. 紧凑态：`.hint` 是 display:none，即时反馈只可能来自居中那件 ===');
-await ev("window.__lc=document.querySelector('section.read'); return 1;");
+console.log('\n=== 7. 紧凑态：`.hint` 是 display:none，反馈只可能来自记录方框第一行 ===');
 const beforeShow = await ev("getComputedStyle(document.querySelector('.hint')).display");
 console.log(`  .hint 的 display=${beforeShow}（紧凑态本来就藏起来）`);
 await ev("document.getElementById('hintAsk').click()");
-await sleep(1400);
+await sleep(600);
 r = await ev(PROBE);
-console.log(`  hintCenter=${JSON.stringify(r.hintCenter)}  dx=${r.dx} dy=${r.dy}`);
-check(r.hintCenter.shown === true && r.hintCenter.op > 0.5, '紧凑态里居中的浮层真的看得见（手机上点求灯终于有反馈）');
-check((r.hintCenter.text || '').indexOf(MARK) >= 0, '写的还是那句提示');
-check(Math.abs(r.dx) <= 2 && Math.abs(r.dy) <= 2, '紧凑态也在正中', `dx=${r.dx} dy=${r.dy}`);
-check(r.hintLine.shown === true, '紧凑态的常驻行也在');
-await shotTo('newui_5_compact_hint_center.png');
-
-await sleep(7000);
-r = await ev(PROBE);
-check(r.hintCenter.op <= 0.05, '紧凑态也自己渐隐', `op=${r.hintCenter.op}`);
+console.log(`  hintLine=${JSON.stringify(r.hintLine)}  在方框里=${r.inDossier} 在记录上=${r.aboveLedger}`);
+console.log(`  压汤面=${r.overRead} 压底栏=${r.overDock} 亮过=${r.lit} 出现在 ${r.places.length} 处`);
+check(!!r.hintLine && r.hintLine.shown, '紧凑态里提示行看得见（手机上点求灯终于有反馈）');
+check(r.hintText.indexOf(MARK) >= 0, '写的还是那句提示', r.hintText);
+check(r.inDossier === true && r.aboveLedger === true,
+  '紧凑态里它也是记录方框的第一行（在问答记录那条 chips 带之上）');
+check(r.overRead === false, '紧凑态也不压汤面（这一屏最怕的就是它）');
+check(r.overDock === false, '也不压底栏');
+check(r.hintLine.y >= 0 && r.hintLine.bottom <= r.vh, '整行都在可视区里，没被顶到屏幕外',
+  `y=${r.hintLine.y} bottom=${r.hintLine.bottom} vh=${r.vh}`);
+check(r.places.length === 1, '紧凑态里也只有一个地方写着这句提示',
+  JSON.stringify(r.places.map((p) => p.cls)));
+await shotTo('newui_5_compact_hint_line.png');
 
 console.log('\n=== 8. 全程无 JS 报错 ===');
 r = await ev(PROBE);

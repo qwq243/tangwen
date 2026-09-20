@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""后台回归：埋点聚合 + 登录 + 鉴权 + 排行榜删档，全套打一遍。
+"""后台回归：埋点聚合 + 模型调用记账 + 登录 + 鉴权 + 排行榜删档，全套打一遍。
 
 用法：python tools/admin-check.py
 
@@ -7,7 +7,8 @@
 所以不会碰真数据、不用先把服务开着。测完关掉，退出码非 0 表示有用例没过。
 
 判题与求灯在这一次启动里被换成桩（见 JUDGE_STUB）：记账的用例必须离线可重复，
-而且「判题挂了也要记下这一问」这条语义只有能让判题挂掉才测得出来。
+而且「判题挂了也要记下这一问」「模型链全挂要记兜底」这两条语义，
+只有能让判题挂掉、能让求灯退兜底才测得出来。
 
 为什么这些用例值得留着：后台的错都是「静默」的 —— 密钥比错了照常返回 200、
 token 不校验签名照样能读数据、UV 不去重数字只是偏大、埋点少记一笔没人报错。
@@ -39,7 +40,9 @@ OUT = ROOT / "tmp" / "_o_admin-check.txt"
 
 # 启动器：import server 之后把两个要联网的函数换成桩，再照原样 main()。
 # 为什么不改 server.py 加个开关 —— 测试的机关不该长在生产代码里。
-# 判题桩按 questions 里带的 key_* 逐条给满分 => 每个关键点都问到 => 判成结案；
+# 判题桩让每一问都当成「玩家把汤底说出来了」=> 判成结案（口径见 server.py 的 SOLVE_RULE：
+# 关键点问齐**不再是**结案条件，所以这里不能只给 key_* 满分 —— 老桩就是这么写的，
+# 改口径那次它一路假红）。关键点那几问也照旧给满分，好让「分卷明细」那几条断言有数可对；
 # 求灯桩直接回一句固定文本（真求灯要打 Workers AI，离线时会退兜底，不稳定）。
 JUDGE_STUB = '''# -*- coding: utf-8 -*-
 import sys
@@ -54,8 +57,10 @@ def fake_typesafe(state, questions):
         raise RuntimeError("stub judge down")
     answers = {{
         "trying_to_extract": {{"noul": 0.0}},
-        "is_full_guess": {{"noul": 0.0}},
-        "guess_correct": {{"noul": 0.0}},
+        # 判成「整段说对了」：结案现在只认这两条线（SOLVE_RULE），
+        # is_full_guess >= 0.75 且 guess_correct >= 0.78
+        "is_full_guess": {{"noul": 0.96}},
+        "guess_correct": {{"noul": 0.96}},
         "host_answer": {{"choice": "no", "confidence": 0.9,
                          "probabilities": {{"no": 0.9, "yes": 0.05}}}},
     }}
@@ -66,6 +71,10 @@ def fake_typesafe(state, questions):
 
 
 def fake_hint(puzzle, history, unlocked, prev=""):
+    # prev 里带「桩-兜底」= 模拟模型链全挂回了兜底那句（真求灯要打 Workers AI，
+    # 离线时退不退兜底说不准，而「兜底」这一档正是 2026-09-20 加的记账，得能复现）
+    if "桩-兜底" in str(prev or ""):
+        return server.FALLBACK_HINT, ""
     return "（桩）提示", "stub"
 
 
@@ -269,9 +278,40 @@ def main() -> int:
            st == 500 and today2.get("ask") == base_today.get("ask", 0) + 2
            and today2.get("solve") == base_today.get("solve", 0) + 1,
            json.dumps({"http": st, "ask": today2.get("ask"), "solve": today2.get("solve")}, ensure_ascii=False))
+        ok("判题调用失败单独记一笔 judgefail",
+           today2.get("judgefail") == base_today.get("judgefail", 0) + 1,
+           f"judgefail={today2.get('judgefail')}")
         st, d = jcall("/api/ask", "POST", {"puzzle_id": "jumper", "question": "  "})
         ok("空问题 / 不存在的卷不算提问", st == 400 and stats_now(token)[0].get("ask") == base_today.get("ask", 0) + 2,
            f"HTTP {st}")
+
+        # 8d. 模型调用记账（2026-09-20 加）：求灯按「这一句是谁答的」分开记，
+        #     链上全挂回兜底单独一档。以前后台只有 hint 一个数 —— 线上
+        #     「求灯永远同一句话」这种静默故障（AI 没绑 / 模型下线）一点痕迹都没有。
+        base3, _ = stats_now(token)
+        st, h = jcall("/api/hint", "POST", {"puzzle_id": "jumper", "history": [], "unlocked": []})
+        ok("求灯响应里带 model（桩 = stub）", st == 200 and h.get("model") == "stub",
+           json.dumps(h, ensure_ascii=False)[:120])
+        st, h = jcall("/api/hint", "POST", {"puzzle_id": "jumper", "history": [], "unlocked": [],
+                                           "prev": "桩-兜底"})
+        ok("链上全挂时 model 是空串（回的是那句兜底）", st == 200 and h.get("model") == "",
+           json.dumps(h, ensure_ascii=False)[:120])
+        st, s3 = jcall("/api/admin/stats?days=7", token=token)
+        today3 = (s3.get("days") or [{}])[-1]
+        models = {r.get("model"): r.get("n") for r in (s3.get("models") or [])}
+        ok("求灯按模型分开记：stub = 2（8b 那次 + 这一次），兜底那次不进模型表",
+           models.get("stub") == 2 and "" not in models,
+           json.dumps(models, ensure_ascii=False))
+        ok("兜底单独一档 hintfallback +1（求灯次数照常 +2）",
+           today3.get("hintfallback") == base3.get("hintfallback", 0) + 1
+           and today3.get("hint") == base3.get("hint", 0) + 2,
+           json.dumps({k: today3.get(k) for k in ("hint", "hintfallback", "ask")}, ensure_ascii=False))
+        ok("stats 带 judge_model（判题模型写死在两条链路里，摆出来核对）",
+           s3.get("judge_model") == "jev-latest", str(s3.get("judge_model")))
+        ok("模型表没混进别的计数（totals 的键是固定的那几个）",
+           set((s3.get("totals") or {}).keys()) ==
+           {"pv", "uv", "new", "ask", "hint", "solve", "give", "judgefail", "hintfallback"},
+           json.dumps(sorted((s3.get("totals") or {}).keys()), ensure_ascii=False))
 
         # 9. 卷宗核对能拿到汤底
         st, v = jcall("/api/admin/puzzles", token=token)

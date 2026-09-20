@@ -32,6 +32,15 @@ const HOST_LABELS = {
 const SOFT_RESCUE_MIN = 0.3; // 软档（不重要 / 无关）的绝对分量线
 const SOFT_RESCUE_RATIO = 0.6; // 软档还得追到 unanswerable 的六成，免得乱码顺带的那点分量把它撬走
 
+/* 结案口径（SOLVE-RULE）：**结案只认「玩家把汤底说出来了」**，不认「关键点问齐了」。
+   为什么改、三个数各是什么，见 server.py 同名常量上的那段注释 —— 两边必须同值，
+   改一边会被 tools/cast-check.py 的 parity 当场逮住。 */
+const SOLVE_RULE = {
+  full_guess: 0.75,     // is_full_guess：这一句是在把汤底讲出来，而不是在问一个点
+  guess_correct: 0.78,  // guess_correct：讲出来的版本抓住了核心机制
+  close_floor: 0.45,    // 整段猜过但没说到点子上：低于这条线就不假装「接近了」
+};
+
 const BASE_QUESTIONS = {
   trying_to_extract: {
     type: "noul",
@@ -39,11 +48,11 @@ const BASE_QUESTIONS = {
   },
   is_full_guess: {
     type: "noul",
-    instructions: "玩家是在陈述完整汤底/核心机制，而不是在问一个探测性是非题？",
+    instructions: "玩家是在把整个汤底 / 核心机制**讲出来**（陈述，不是在问），而不是在问一个探测性是非题？自己的推理串成一段话、或一句话点破核心机制都算。",
   },
   guess_correct: {
     type: "noul",
-    instructions: "若当作完整猜测：是否已经抓住汤底核心机制？探测题即使方向对也不算猜中。",
+    instructions: "若当作完整猜测：是否已经抓住汤底核心机制？机制说对了就算说中，个别细节没提到不扣分；探测题即使方向对也不算猜中。",
   },
   host_answer: {
     type: "choice",
@@ -205,7 +214,10 @@ async function judge(env, puzzle, utterance, history, unlocked) {
   const choice = pickHost(host.choice || "unanswerable", probabilities);
   const confidence = Number(host.confidence || 0);
 
-  if (fullGuess >= 0.75 && guessOk >= 0.78) {
+  const guessHit =
+    fullGuess >= SOLVE_RULE.full_guess && guessOk >= SOLVE_RULE.guess_correct;
+  if (guessHit) {
+    // 整段说对了：关键点按定义全算问到（那排 chips 是进度条，不再决定结案）
     for (const k of keys) found.add(k.id);
   } else {
     for (const key of keys) {
@@ -217,7 +229,9 @@ async function judge(env, puzzle, utterance, history, unlocked) {
     }
   }
 
-  const solved = keys.length > 0 && keys.every((k) => found.has(k.id));
+  // 结案 = 猜出来了（SOLVE_RULE）。**关键点问齐不再是结案判据** ——
+  // 问齐只是「料凑够了」，玩家没说圆就接着问 / 去求灯，别替他揭底。
+  const solved = keys.length > 0 && guessHit;
   let verdict;
   let label;
   let say;
@@ -228,9 +242,14 @@ async function judge(env, puzzle, utterance, history, unlocked) {
   } else if (solved) {
     verdict = "solved";
     label = "结案";
-    say = "关键点已经齐了。";
+    say = "说对了。汤底封卷。";
   } else {
     verdict = choice in HOST_LABELS ? choice : "unanswerable";
+    // 整段猜过、但没说到点子上：落「接近了」比落「是 / 不是」贴切 ——
+    // 玩家讲的是故事，不是一个是非命题。差得太远（低于 close_floor）就不假装接近。
+    if (fullGuess >= SOLVE_RULE.full_guess && guessOk >= SOLVE_RULE.close_floor) {
+      verdict = "close";
+    }
     label = HOST_LABELS[verdict] || HOST_LABELS.unanswerable;
     say = {
       yes: "是。",
@@ -567,7 +586,7 @@ async function makeHint(env, puzzle, history, unlocked, prev) {
    偏偏访问量还在涨（2026-09-20 实况：pv=67 uv=22 ask=0）—— 看起来像后台坏了。
    服务端看得见的事就别外包给前端。 */
 const TRACK_CLIENT_KINDS = ["pv"];              // 客户端还能报的
-const BUMP_KINDS = ["ask", "hint", "solve", "give"];   // 服务端自己数的
+const BUMP_KINDS = ["ask", "hint", "solve", "give", "judgefail"];   // 服务端自己数的
 const BUMP_PUZZLE_KINDS = ["ask", "hint", "solve"];    // 其中要记到分卷明细的
 const TRACK_MAX_EVENTS = 240;          // 一次请求最多认这么多条，防着有人拿它刷
 const SEEN_TTL = 60 * 24 * 60 * 60;    // 60 天
@@ -630,7 +649,13 @@ async function applyTrack(env, date, events, uid) {
    并发写同一天的键仍然是读-改-写，撞一起会少记几笔，和原先客户端上报同一个已知偏差。
 
    日期现算：Worker 是短命的，但一个 isolate 会跨零点被复用，别把日期缓起来。 */
-async function bumpTrack(env, kind, pid) {
+/* 接口自己记一笔（ask / hint / solve / give / judgefail）。与 server.py 的 bump_track 1:1。
+
+   `model` 是「这一次求灯的模型调用落在谁身上」（判题那条不传，理由见 server.py 同名函数）：
+   传模型名 → 当天的 day.m[模型] += 1；传空串 → 链上全挂回了兜底 → hintfallback。
+   一次请求只读-改-写一次 KV（把模型计数并进同一笔写里，别为它再写一次 —— 
+   免费额度是按写次数算的）。 */
+async function bumpTrack(env, kind, pid, model) {
   if (!env.BOARD || !BUMP_KINDS.includes(kind)) return;
   const key = "st:d:" + shanghaiDate(0);
   const day = (await readJsonKey(env, key)) || {};
@@ -641,6 +666,14 @@ async function bumpTrack(env, kind, pid) {
     const p = day.p && typeof day.p === "object" ? day.p : (day.p = {});
     const row = p[id] && typeof p[id] === "object" ? p[id] : (p[id] = {});
     row[kind] = (row[kind] || 0) + 1;
+  }
+  if (typeof model === "string") {
+    if (model) {
+      const m = day.m && typeof day.m === "object" ? day.m : (day.m = {});
+      m[model] = (m[model] || 0) + 1;
+    } else {
+      c.hintfallback = (c.hintfallback || 0) + 1;
+    }
   }
   await env.BOARD.put(key, JSON.stringify(day));
 }
@@ -762,23 +795,34 @@ async function collectStats(env, days) {
   const dates = [];
   for (let i = days - 1; i >= 0; i--) dates.push(shanghaiDate(-i));
   const raws = await Promise.all(dates.map((d) => readJsonKey(env, "st:d:" + d)));
+  /* judgefail（判题调用失败）与 hintfallback（求灯退到兜底）跟别的计数一样按天走，
+     给后台「模型调用」那张卡与折线用。day.m（按模型的求灯次数）不进 series ——
+     它是「谁答的」的分解，没有按天的趋势可言，单独聚合成 models。
+     口径与 server.py 的 collect_stats 1:1。 */
   const series = dates.map((date, i) => {
     const c = (raws[i] && raws[i].c) || {};
     const row = { date };
-    for (const k of ["pv", "uv", "new", "ask", "hint", "solve", "give"]) {
+    for (const k of ["pv", "uv", "new", "ask", "hint", "solve", "give", "judgefail", "hintfallback"]) {
       row[k] = Number(c[k] || 0) || 0;
     }
     return row;
   });
   const perPuzzle = {};
+  const perModel = {};
   raws.forEach((day) => {
     const p = (day && day.p) || {};
     Object.keys(p).forEach((pid) => {
       const row = perPuzzle[pid] || (perPuzzle[pid] = { ask: 0, hint: 0, solve: 0 });
       for (const k of ["ask", "hint", "solve"]) row[k] += Number(p[pid][k] || 0) || 0;
     });
+    const m = (day && day.m) || {};
+    Object.keys(m).forEach((model) => {
+      perModel[model] = (perModel[model] || 0) + (Number(m[model] || 0) || 0);
+    });
   });
-  const totals = { pv: 0, uv: 0, new: 0, ask: 0, hint: 0, solve: 0, give: 0 };
+  const totals = {
+    pv: 0, uv: 0, new: 0, ask: 0, hint: 0, solve: 0, give: 0, judgefail: 0, hintfallback: 0,
+  };
   series.forEach((r) => {
     Object.keys(totals).forEach((k) => {
       totals[k] += r[k];
@@ -794,7 +838,15 @@ async function collectStats(env, days) {
     }))
     // 排一下：先按提问多，再按结案多
     .sort((a, b) => b.ask - a.ask || b.solve - a.solve);
-  return { ok: true, today: shanghaiDate(0), days: series, totals, puzzles, window: days };
+  const models = Object.keys(perModel)
+    .filter((model) => perModel[model] > 0)
+    .map((model) => ({ model, n: perModel[model] }))
+    .sort((a, b) => b.n - a.n || (a.model < b.model ? -1 : 1));
+  return {
+    ok: true, today: shanghaiDate(0), days: series, totals, puzzles, models, window: days,
+    // 判题模型是写死的常量（十档阈值都照它量的），摆出来给后台核对
+    judge_model: JUDGE_MODEL,
+  };
 }
 
 async function readJson(request) {
@@ -968,6 +1020,8 @@ export async function onRequest(context) {
       if (result.solved) context.waitUntil(bumpTrack(env, "solve", pid).catch(() => {}));
       return json(result);
     } catch (e) {
+      // 判题调用失败单独记一笔：ask 是「玩家问了几次」，judgefail 是「模型调用挂了几次」
+      context.waitUntil(bumpTrack(env, "judgefail", pid).catch(() => {}));
       if (e.status === 502) return json({ ok: false, error: e.message, detail: e.detail }, 502);
       return json({ ok: false, error: String(e.message || e) }, 500);
     }
@@ -1020,11 +1074,14 @@ export async function onRequest(context) {
     const pid = String(body.puzzle_id || "").trim();
     const puzzle = PUZZLES[pid];
     if (!puzzle) return json({ ok: false, error: "puzzle not found" }, 404);
-    context.waitUntil(bumpTrack(env, "hint", pid).catch(() => {}));
     const history = Array.isArray(body.history) ? body.history : [];
     const unlocked = Array.isArray(body.unlocked) ? body.unlocked : [];
     const prev = typeof body.prev === "string" ? body.prev : "";
     const { hint, shape, model } = await makeHint(env, puzzle, history, unlocked, prev);
+    /* 求灯这一笔带模型一起记（一次 KV 写）：model 非空 → 当天那个模型 +1，
+       空串（链上全挂、回了兜底）→ hintfallback +1。要等 makeHint 回来才知道记谁，
+       所以这笔账挪到它后面；makeHint 自己吞掉每个模型的异常，真抛了这一次不记账。 */
+    context.waitUntil(bumpTrack(env, "hint", pid, model || "").catch(() => {}));
     /* model 是这次真正出正文的那个模型，shape 只在「一个都没出正文」时才有值。
        两个都带上，是为了让「模型被下线」这类静默故障下次一眼可见：
        老写法写死一个模型名，它 5 月 30 号就下线了，而线上只表现为「求灯永远同一句话」。

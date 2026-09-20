@@ -36,9 +36,8 @@
   const lampBtn = $("lamp");
   const hintAskBtn = $("hintAsk");
   const hintLineEl = $("hintLine");
+  const hintTextEl = $("hintText");
   const hintEl = $("hint");
-  const hintCenterEl = $("hintCenter");
-  const hintCenterText = hintCenterEl.querySelector("p");
   const bootEl = $("boot");
   const bootCap = $("bootCap");
   const finder = $("finder");
@@ -73,7 +72,6 @@
   let revealTimer = 0;
   let finaleTimer = 0;
   let hintTimer = 0;
-  let hintCenterTimer = 0;
   let wheelLock = 0;
   /* 埋点攒批的定时器。必须在这里声明：文件是 "use strict" 的，
      下面 `trackTimer = setInterval(...)` 那行在未声明时会直接抛 ReferenceError，
@@ -117,7 +115,11 @@
     if (audioBooted || !Snd) return;
     audioBooted = true;
     Snd.boot();
-    if (soundOn) Snd.startMusic();
+    if (soundOn) {
+      Snd.startMusic();
+      // 开卷第一声：跟环境音一起起，标一下「馆子开了」（这一下之前浏览器不许出声）
+      Snd.sfx("open");
+    }
   }
   ["pointerdown", "keydown", "touchstart"].forEach((ev) =>
     window.addEventListener(ev, firstGesture, { once: true, passive: true })
@@ -137,12 +139,24 @@
   try { lampOn = localStorage.getItem("fengcun.lamp") === "1"; } catch (_) {}
   /* 提示行的唯一出口：改这里就够了，灯开关与换卷都走它。
      灯灭必须收起来（关灯就不该再看到提示），灯再开要自己回来 ——
-     这句是「关一下灯提示就永久消失」那个 bug 的修补点。 */
+     这句是「关一下灯提示就永久消失」那个 bug 的修补点。
+
+     位置只剩一处：#hintLine，也就是**记录方框的第一行**（2026-09-20 用户定的位置：
+     「直接放在我们历史记录方框的上面，但是不要把汤面挡住了」）。
+     以前还有一件屏幕正中的浮层，盖在汤面上，已经删了。 */
   function syncHint() {
     const p = puzzles.length ? current() : null;
     const hint = lampOn && p ? (hintMap.get(p.id) || "") : "";
-    if (hintLineEl.textContent !== hint) hintLineEl.textContent = hint;
+    if (hintTextEl.textContent !== hint) hintTextEl.textContent = hint;
     hintLineEl.hidden = !hint;
+  }
+  /* 灯刚来那一下：把整行点亮一记（.lit）。这是删掉居中浮层之后「点下去当场有反应」的
+     替代 —— 反馈落在提示自己该在的地方，不浮到汤面上盖东西。
+     先摘掉再强制回流：连点两次求灯时，第二次也得亮（不然同名动画不会重放）。 */
+  function litHint() {
+    hintLineEl.classList.remove("lit");
+    void hintLineEl.offsetWidth;
+    hintLineEl.classList.add("lit");
   }
   function syncLamp() {
     lampBtn.classList.toggle("off", !lampOn);
@@ -169,7 +183,9 @@
     /* 开灯这句要说清「求灯去哪了」：它 2026-09-20 从「询问记录」面板里挪到了底栏，
        不点一句的话，老玩家会以为这个功能没了。 */
     showHint(lampOn ? "提示开 · 底栏多了「求灯」" : "提示关", 1800);
-    sfx("hover");
+    /* 开灯 / 关灯各有一声：点灯是芯爆，关灯是吹灭。
+       以前借的是一声 hover（鼠标划过那种「嗒」），跟灯这个隐喻一点关系都没有。 */
+    sfx(lampOn ? "wickOn" : "wickOff");
   });
 
   const sfx = (name, arg) => { if (Snd) Snd.sfx(name, arg); };
@@ -565,22 +581,10 @@
     hintTimer = setTimeout(() => hintEl.classList.remove("show"), ms || 3600);
   }
 
-  /* 求灯那句提示的居中展示：屏幕正中浮一次，停一会儿自己渐隐。
-
-     为什么要另开一个出口：`.hint` 那个 toast 只有画廊态有位置（紧凑态是 display:none），
-     手机上点完「求灯」，唯一的变化是记录条下面多出一行 13px 的字 —— 求的人自己
-     都可能没看出来，更别说旁边看的人。这里是「这一下真的求到了」的即时反馈。
-
-     它是通知不是面板，所以：不写 .hint-line、不碰 hintMap（那两处才是常驻出口，
-     刷新后还得读得到）；元素本身 pointer-events:none（不许挡底栏的输入条和麦克风），
-     点屏幕任意处顺手收掉它 —— 见下面那个 document 上的 pointerdown。 */
-  function showHintCenter(text, ms) {
-    if (!text) return;
-    hintCenterText.textContent = text;
-    hintCenterEl.classList.add("show");
-    clearTimeout(hintCenterTimer);
-    hintCenterTimer = setTimeout(() => hintCenterEl.classList.remove("show"), ms || 5200);
-  }
+  /* 这里原来还有一个 showHintCenter()：把求来的那句提示在屏幕正中浮一次再渐隐。
+     2026-09-20 删了 —— 用户实报「提示不明显，放记录方框上面，别挡住汤面」，
+     而屏幕正中那一浮在手机上正好盖住汤面。提示的常驻位现在是记录方框第一行
+     （#hintLine），点下去那一下的即时反馈由 litHint() 给。 */
 
   /* 等掌灯人那段时间，状态行上写什么。
 
@@ -687,6 +691,9 @@
     clock.running = false;
     syncPauseTag();
     saveProgress();
+    /* 停表 / 回表都极轻地响一声：停表可能是自动的（闲置一分钟），
+       不响这一下的话玩家回头看到表停了会以为坏了。 */
+    sfx("pause");
     if (why === "idle") showHint("停表 · 好一会儿没动，动一下接着计", 3400);
   }
 
@@ -724,6 +731,7 @@
     clock.running = true;
     clock.at = clock.lastAct;
     syncPauseTag();
+    sfx("resume");   // 表接回来的一记（引擎那边 500ms 节流，连着点也只响一下）
   }
 
   function tickClock() {
@@ -864,9 +872,12 @@
       paintStrip();
       setOffset(0, false);
       loadSolveCounts();          // 人数晚一步回来，回来再刷列表与榜头
-      sfx("slide", lastSlideDir);
     }
-    closeFind();
+    /* 「跳到第几卷」和「顺着滑一卷」是两件事，声音也分开：
+       seek 短促、有一记落地的「咔」；slide 是拖着走的扫掠。
+       收面板那一下（closeFind）不再补一声 —— 这一下已经响过了。 */
+    sfx("seek");
+    closeFind(true);
     showHint(`第 ${pad(i)} 卷 · ${puzzles[i].title}`, 2200);
   }
 
@@ -889,6 +900,7 @@
   function openFind() {
     if (findOn) return;
     revealFind();
+    sfx("find", true);
     findInput.value = "";
     syncFindClear();
     // findOn 已经是 true，所以就算查询是空的，面板（连着汤色 / 难度两行筛选）也会出来
@@ -898,8 +910,12 @@
 
   /* 只收界面，不清输入框，也不清汤色筛选：宽屏那条输入框是常驻的，
      点一下别处不该把它抹掉；筛着的汤色是一种「正在浏览哪一类」的状态，
-     再按 K 回来时还是那一类才对。两者在面板里都看得见（选中的那枚印是亮的）。 */
-  function closeFind() {
+     再按 K 回来时还是那一类才对。两者在面板里都看得见（选中的那枚印是亮的）。
+
+     quiet=true 是不出声地收（跳卷那条路用：那一下已经有 seek 了，再来一声「收面板」
+     就成了两件声叠在一起）。 */
+  function closeFind(quiet) {
+    if (findOn && !quiet) sfx("find", false);
     findOn = false;
     stage.classList.remove("finding");
     findList.hidden = true;
@@ -969,15 +985,6 @@
     if (e.target.closest(".finder")) return;
     closeFind();
   });
-
-  /* 求灯那件居中浮层：点屏幕任意处顺手收掉。
-     挂在 document 上而不是元素自己身上 —— 它 pointer-events:none（不许挡住底栏的
-     输入条和麦克风），收不到任何事件。它是通知不是面板，想接着问的时候不该等它。 */
-  document.addEventListener("pointerdown", () => {
-    if (!hintCenterEl.classList.contains("show")) return;
-    clearTimeout(hintCenterTimer);
-    hintCenterEl.classList.remove("show");
-  }, true);
 
   /* ---------------- 侧墙画框的交叉淡入 ---------------- */
 
@@ -1149,12 +1156,17 @@
     setText(lastMsEl, last && last.ms != null ? `${last.ms}ms` : "");
     const found = new Set(unlockedMap.get(p.id) || []);
     const lit = (p.keys || []).filter((k) => found.has(k.id));
-    const keysSig = lit.map((k) => k.id).join(",");
+    /* 关键点齐了、这一卷又还没结案 → 在那排 chips 末尾挂一枚常驻的「讲一遍就结案」。
+       结案现在只认玩家自己把汤底说出来（SOLVE_RULE），问齐只是进度；
+       没有这枚常驻件的话，「chips 全亮了却什么都没发生」看着就像坏了。
+       （紧凑态 .keys 整排是 display:none，那边的提示出路是解锁牌那一下。） */
+    const ready = lit.length > 0 && lit.length === (p.keys || []).length && !solvedSet.has(p.id);
+    const keysSig = lit.map((k) => k.id).join(",") + (ready ? "|ready" : "");
     if (force || keysEl.dataset.sig !== keysSig) {
       keysEl.dataset.sig = keysSig;
       keysEl.innerHTML = lit.map((k) =>
         `<span class="key-chip on">${escapeHtml(k.label)}</span>`
-      ).join("");
+      ).join("") + (ready ? '<span class="key-chip ready">讲一遍就结案</span>' : "");
       keysEl.hidden = lit.length === 0;
     }
     const sig = p.id + "|" + hist.length + "|" + (last ? last.ms : "");
@@ -1339,7 +1351,15 @@
         const labels = (p.keys || []).filter((k) => newly.includes(k.id)).map((k) => k.label);
         const total = (p.keys || []).length;
         const found = (unlockedMap.get(p.id) || []).length;
-        showReveal(labels.join(" · ") || "新线索", total ? `已解锁 ${found} / ${total}` : "");
+        /* 关键点齐了，但还没结案 —— 现在这两件事是分开的（见 server.py 的 SOLVE_RULE）：
+           问齐只说明料凑够了，得玩家自己把汤底讲一遍才对得上「结案」那枚印。
+           所以最后一块拼图落下时，牌子要换个说法告诉他下一步干什么，
+           不然玩家会以为游戏卡住了（这也是「替玩家结案」那个旧口径的替代）。 */
+        if (total > 0 && found >= total) {
+          showReveal("把汤底讲一遍", "关键点齐了 · 讲对了才结案", "关 键 点 齐 了");
+        } else {
+          showReveal(labels.join(" · ") || "新线索", total ? `已解锁 ${found} / ${total}` : "");
+        }
         sfx("unlock");
       }
       saveProgress();
@@ -1581,6 +1601,9 @@
     lastT = now;
     dragX = e.clientX - startX;
     queueDragMove();
+    /* 拖动时的一层轻摩擦（引擎里节流到 95ms）：不响的话画面在动、耳朵是静的，
+       手感会「飘」。阈值 8px 是为了滤掉按下时指尖那点抖动 —— 那不是拖。 */
+    if (Math.abs(dragX) > 8) sfx("drag");
     const w = frame.clientWidth || 1;
     if (Math.abs(dragX) > w * 0.08) {
       const dir = dragX < 0 ? 1 : -1;
@@ -2045,14 +2068,14 @@
       hintedSet.add(p.id);
       hintMap.set(p.id, data.hint || "");
       syncHint();
+      litHint();
+      sfx("hint");
       announce("提示。" + (data.hint || ""));
       saveProgress();
-      /* 提示的出口有三处，各管一段：`.hint-line`（记录条里那行常驻，刷新后还在）、
-         下面这个居中浮层（两套布局都有，几秒后渐隐）、以及画廊态的 toast。
-         toast 只有画廊态有位置（`.stage.compact .hint` 是 display:none）——
-         所以这里不能再写成「紧凑态显示 toast」：那句写进了一个 display:none 的元素里，
-         等于手机上没有提示。 */
-      showHintCenter(data.hint || "");
+      /* 提示的出口现在只有一处：`.hint-line`，记录方框的第一行（常驻、刷新后还在、
+         能反复读）。点下去那一下的即时反馈由 litHint() 给 ——
+         以前这里还有「屏幕正中浮一次」和画廊态 toast 两件，前者盖在汤面上（用户实报），
+         后者在紧凑态是 display:none（写了等于没写）。 */
       showHint("灯来了", 1400);
     } catch (err) {
       stopWait();
@@ -2133,9 +2156,14 @@
   /* 分步引导：步数由 HTML 里 .tour-card 的张数决定，别在 JS 里再写死一个数 */
   let tourIdx = 0;
   let tourN = 1;
+  /* 引导翻页的纸声：第一屏（刚摊开那一下）不出声 —— 那时候的状态是「开卷」，
+     翻页才是「翻页」。摊开时把开关置回 false，之后每次切卡都响。 */
+  let tourSoundArmed = false;
 
   function tourShow(i) {
+    if (tourSoundArmed) sfx("tour");
     tourIdx = Math.max(0, Math.min(tourN - 1, i));
+    tourSoundArmed = true;
     const cards = document.querySelectorAll("#tourBody .tour-card");
     const dots = document.querySelectorAll("#tourDots .tour-dot");
     cards.forEach((c, k) => { c.hidden = k !== tourIdx; });
@@ -2185,6 +2213,7 @@
       dotsEl.appendChild(b);
     }
     el.hidden = false;
+    tourSoundArmed = false;   // 第一屏不出声：摊开不是翻页
     tourShow(0);
   }
 

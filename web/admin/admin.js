@@ -15,6 +15,11 @@
   var vols = [];
   var boardPid = "";
   var toastTimer = 0;
+  /* 卷宗核对的筛选状态。q 是搜索词（空格分开＝都要命中），soup / diff 是分类。
+     两个分类是**并列**的（可以同时是「黑汤 + 深」，跟正馆那个搜剧本一个手感）。 */
+  var volQ = "";
+  var volSoup = "";
+  var volDiff = "";
 
   /* ---------------- 基础 ---------------- */
 
@@ -204,8 +209,60 @@
     $("chartSub").textContent = "近 " + days + " 日";
     $("puzSub").textContent = "近 " + days + " 日 · " + (stats.puzzles || []).length + " 卷有人问过";
     renderChart();
+    renderModels();
     renderPuzTable();
     renderDayTable();
+  }
+
+  /* ---------------- 渲染：模型调用 ----------------
+
+     两条链路各算各的账（口径见 README「模型调用统计」）：
+       判题 = TypeSafe + jev-latest，**每次提问必发一次** —— 所以「判题调用次数」
+              就等于提问数，另记一笔「判题失败」看它有没有在挂（密钥/额度/上游）；
+       求灯 = Workers AI 免费额度，按「这一句是谁答的」分开记（day.m），
+              链上全挂回兜底的那一档单独算（hintfallback）。
+     这些都是接口自己记的（server.py / Worker 的 bump_track），页面只负责摆出来。 */
+  function renderModels() {
+    if (!stats) return;
+    var t = stats.totals || {};
+    var today = (stats.days || []).slice(-1)[0] || {};
+    var models = stats.models || [];
+    var judge = stats.judge_model || "";
+    $("modelSub").textContent = "近 " + days + " 日";
+
+    var tile = function (label, nowV, sumV, warn) {
+      return '<div class="mod' + (warn ? " warn" : "") + '">' +
+        '<div class="k">' + label + '</div>' +
+        '<div class="v">' + n(nowV) + '</div>' +
+        '<div class="d">今日 · 区间 ' + n(sumV) + '</div></div>';
+    };
+    $("mods").innerHTML =
+      tile("今日判题调用", today.ask, t.ask, false) +
+      tile("判题失败", today.judgefail, t.judgefail, Number(today.judgefail || 0) > 0) +
+      tile("今日求灯调用", today.hint, t.hint, false) +
+      tile("求灯兜底", today.hintfallback, t.hintfallback, Number(today.hintfallback || 0) > 0);
+
+    $("modNote").innerHTML =
+      "判题走 <span class=\"mono\">" + esc(judge || "?") + "</span>（写死的，十档阈值照它量的）；" +
+      "提问一次必发一次判题，所以「判题调用」＝提问数 —— 它和「判题失败」对不上的时候，" +
+      "差的就是模型调用没回来的那些。求灯走 Workers AI 的模型链，哪一句是谁答的看下表。";
+
+    var total = models.reduce(function (s, r) { return s + Number(r.n || 0); }, 0);
+    if (!models.length) {
+      $("modTable").innerHTML = '<div class="empty">' +
+        (Number(t.hint || 0) > 0 ? "这个区间的求灯全部退到了兜底（AI 没绑上，或模型链全挂了）" : "这个区间还没有人求灯") +
+        '</div>';
+    } else {
+      $("modTable").innerHTML = '<table><thead><tr>' +
+        '<th>求灯模型</th><th class="num">次数</th><th class="num">占比</th>' +
+        '</tr></thead><tbody>' +
+        models.map(function (r) {
+          var pct = total ? Math.round((Number(r.n || 0) / total) * 1000) / 10 : 0;
+          return '<tr><td class="mono">' + esc(r.model) + '</td>' +
+            '<td class="num">' + n(r.n) + '</td>' +
+            '<td class="num">' + pct + '%</td></tr>';
+        }).join("") + '</tbody></table>';
+    }
   }
 
   function renderPuzTable() {
@@ -438,12 +495,77 @@
     }
   });
 
-  /* ---------------- 卷宗核对 ---------------- */
+  /* ---------------- 卷宗核对 ----------------
+
+     2026-09-20 加：搜索 + 分类。44 卷摊开之后，想找「那卷讲丧尸的」「所有黑汤深卷」
+     只能靠眼睛扫 —— 核对汤底/汤色/难度本来就是这一栏的活，得能筛。
+     搜索覆盖整卷正文（卷名 / 卷号 / 汤面 / 汤底 / 关键点的标题与问法）：
+     核对的场景常常是「我记得有个词，在哪一卷来着」，只搜标题是不够的。 */
+
+  function volTerms() {
+    return volQ.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  }
+
+  function volHay(p) {
+    return [p.title, p.id, p.soup, p.difficulty, p.surface, p.bottom]
+      .concat((p.keys || []).map(function (k) { return (k.label || "") + " " + (k.prompt || ""); }))
+      .join(" ").toLowerCase();
+  }
+
+  function volMatched() {
+    var terms = volTerms();
+    return vols.filter(function (p) {
+      if (volSoup && p.soup !== volSoup) return false;
+      if (volDiff && p.difficulty !== volDiff) return false;
+      if (!terms.length) return true;
+      var hay = volHay(p);
+      return terms.every(function (t) { return hay.indexOf(t) >= 0; });
+    });
+  }
+
+  function volFiltered() {
+    return !!(volTerms().length || volSoup || volDiff);
+  }
+
+  /* 分类那排 chip。跟正馆那个搜剧本一样：一枚共用的「全部」把两类都清掉，
+     汤色三枚 / 难度三枚各自可切（再点一下取消）。卷数按**全库**算 ——
+     问「清汤有几卷」和当前筛着什么无关。 */
+  function renderVolTags() {
+    var countBy = function (key, val) {
+      return vols.filter(function (p) { return p[key] === val; }).length;
+    };
+    var chip = function (attrs, label, n, on) {
+      return '<button type="button" ' + attrs + ' class="' + (on ? "on" : "") + '">' +
+        esc(label) + '<span class="k">' + n + '</span></button>';
+    };
+    var all = volFiltered() ? "" : " on";
+    var html = chip('data-all="1"', "全部", vols.length, !!all);
+    html += ['清汤', '红汤', '黑汤'].map(function (s) {
+      return chip('data-soup="' + s + '"', s, countBy("soup", s), volSoup === s);
+    }).join("");
+    html += '<i class="sep"></i>';
+    html += ['浅', '中', '深'].map(function (d) {
+      return chip('data-diff="' + d + '"', d, countBy("difficulty", d), volDiff === d);
+    }).join("");
+    $("volTags").innerHTML = html;
+  }
 
   function renderVolumes() {
-    $("volSub").textContent = vols.length + " 卷";
+    var list = volMatched();
+    var filtered = volFiltered();
+    $("volSub").textContent = filtered
+      ? list.length + " / " + vols.length + " 卷"
+      : vols.length + " 卷";
+    $("volClear").hidden = !volQ;
+    renderVolTags();
     if (!vols.length) { $("vols").innerHTML = '<div class="empty">没拿到卷宗</div>'; return; }
-    $("vols").innerHTML = vols.map(function (p, i) {
+    if (!list.length) {
+      $("vols").innerHTML = '<div class="empty">没有符合条件的卷 —— 换个词，或点「全部」把分类清掉</div>';
+      return;
+    }
+    $("vols").innerHTML = list.map(function (p) {
+      /* 卷号取全库里的序号，不是筛完的名次：核对时说的「第 07 卷」得是同一个卷 */
+      var i = vols.indexOf(p);
       return '<details class="vol"><summary>' +
         '<span class="idx">' + String(i + 1).padStart(2, "0") + '</span>' +
         '<span class="t">' + esc(p.title) + '</span>' +
@@ -463,6 +585,26 @@
         '</div></details>';
     }).join("");
   }
+
+  $("volQ").addEventListener("input", function () {
+    volQ = this.value || "";
+    renderVolumes();
+  });
+  $("volClear").addEventListener("click", function () {
+    volQ = "";
+    $("volQ").value = "";
+    renderVolumes();
+    $("volQ").focus();
+  });
+  $("volTags").addEventListener("click", function (e) {
+    var b = e.target.closest("button");
+    if (!b) return;
+    var ds = b.dataset;
+    if (ds.all !== undefined) { volSoup = ""; volDiff = ""; }
+    else if (ds.soup !== undefined) { volSoup = volSoup === ds.soup ? "" : ds.soup; }
+    else if (ds.diff !== undefined) { volDiff = volDiff === ds.diff ? "" : ds.diff; }
+    renderVolumes();
+  });
 
   /* ---------------- 导出 ---------------- */
 
