@@ -1,0 +1,32 @@
+# 汤问 · 海龟汤 —— 仓库只收「源码 + 语料 + 封面」。
+# 判据跟 pack.py 那份「运行期必需」清单对齐：装不进部署包的东西，也不进版本库。
+
+# 运行期状态：排行榜 / 结案数 / 埋点，server.py 每次都读改写（DATA_DIR 可另指）
+/data/
+
+# 部署包与覆盖包：跑 pack.py / wrangler 就有，每次都是新的
+/dist/
+
+# 已停用的服务端 ASR 模型：asr.py 会按需重下（约 148MB），重下了也不要入库
+/models/
+
+# 临时产物：探针截图与假数据；本机的两个帮手脚本 _start_local.py / _deploy.py 也在这
+/tmp/
+
+# Python 字节码与虚拟环境
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Node 依赖与 Cloudflare 本地状态（npx wrangler 会重建）
+node_modules/
+.wrangler/
+
+# 智能体 / 编辑器的本地状态
+.workbuddy/
+
+# 密钥与日志。判题密钥走环境变量或 Pages Secret，绝不写进仓库
+.env
+.env.*
+*.log

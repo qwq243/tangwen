@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="theme-color" content="#070605" />
+  <title>汤问 · 后台</title>
+  <link rel="stylesheet" href="./admin.css" />
+</head>
+<body>
+
+<!-- ============ 登录 ============ -->
+<section class="login" id="login">
+  <div class="seal"><span>汤问</span></div>
+  <h1>账 房</h1>
+  <p class="tip" id="loginTip">此门只认密钥。</p>
+  <form id="loginForm" autocomplete="off">
+    <input id="key" type="password" name="key" placeholder="后台密钥" autocomplete="current-password" spellcheck="false" />
+    <div class="err" id="loginErr"></div>
+    <button class="btn go" id="loginGo" type="submit">进</button>
+  </form>
+</section>
+
+<!-- ============ 后台 ============ -->
+<div class="wrap" id="app" hidden>
+  <div class="top">
+    <div class="seal">汤问</div>
+    <div class="kicker">账 房</div>
+    <div class="grow"></div>
+    <div class="today" id="today"></div>
+    <button class="btn tiny" id="refresh" type="button">刷新</button>
+    <button class="btn tiny" id="export" type="button">导出</button>
+    <button class="btn tiny danger" id="logout" type="button">退出</button>
+  </div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="card">
+    <div class="chart-head">
+      <h2 style="margin:0">趋势<span class="sub" id="chartSub"></span></h2>
+      <div class="grow"></div>
+      <div class="seg" id="metric">
+        <button data-m="pv" class="on" type="button">访问</button>
+        <button data-m="uv" type="button">访客</button>
+        <button data-m="ask" type="button">提问</button>
+        <button data-m="hint" type="button">求灯</button>
+        <button data-m="solve" type="button">结案</button>
+        <button data-m="new" type="button">新增</button>
+      </div>
+      <div class="seg" id="range">
+        <button data-d="7" type="button">7 天</button>
+        <button data-d="14" type="button">14 天</button>
+        <button data-d="30" class="on" type="button">30 天</button>
+        <button data-d="90" type="button">90 天</button>
+      </div>
+    </div>
+    <div class="chart-box" id="chartBox"></div>
+  </div>
+
+  <div class="cols">
+    <div class="card">
+      <h2>分卷<span class="sub" id="puzSub"></span></h2>
+      <div id="puzTable"></div>
+    </div>
+    <div class="card">
+      <h2>近 7 日明细</h2>
+      <div id="dayTable"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>排行榜</h2>
+    <div class="board-head">
+      <select id="boardPick"></select>
+      <div class="grow"></div>
+      <button class="btn tiny" id="boardReload" type="button">读取</button>
+      <button class="btn tiny danger" id="boardClear" type="button">清空本卷</button>
+    </div>
+    <div id="boardTable"></div>
+  </div>
+
+  <div class="card">
+    <h2>卷宗核对<span class="sub" id="volSub"></span></h2>
+    <div class="vols" id="vols"></div>
+  </div>
+
+  <div class="foot">
+    <b>数据口径</b>　日期按 Asia/Shanghai 切。访问＝首页开卷成功一次；访客按浏览器本地随机 uid 去重；
+    新增＝该 uid 第一次出现。提问 / 求灯 / 结案都按卷记一次。<br />
+    <b>不记什么</b>　不存 IP、不存 UA、不存问题原文、不存任何能对应到人的东西。uid 是前端随机串。<br />
+    <b>存在哪</b>　Cloudflare KV，键前缀 <span class="mono">st:d:</span>（每日计数）、
+    <span class="mono">st:u:</span>（当日 uid，60 天自清）、<span class="mono">st:f:</span>（首次访问）。
+    日切计数是「读-改-写」，并发极端情况下会少记，量级上不影响看趋势。
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="./admin.js"></script>
+</body>
+</html>

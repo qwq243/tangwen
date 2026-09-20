@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
+  <meta name="theme-color" content="#050403" />
+  <title>汤问</title>
+  <link rel="preload" href="./styles.css?v=31" as="style" />
+  <link rel="preload" href="./images/hall-plate.webp" as="image" type="image/webp" media="(orientation: landscape)" />
+  <link rel="preload" href="./images/hall-plate-portrait.webp" as="image" type="image/webp" media="(orientation: portrait)" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=ZCOOL+XiaoWei&family=Noto+Serif+SC:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+  <noscript><link href="https://fonts.googleapis.com/css2?family=ZCOOL+XiaoWei&family=Noto+Serif+SC:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" /></noscript>
+  <link rel="stylesheet" href="./styles.css?v=31" />
+</head>
+<body>
+  <div class="void">
+    <div class="stage" id="stage">
+      <div class="hall" aria-hidden="true"></div>
+      <div class="motes" id="motes" aria-hidden="true"></div>
+
+      <div class="wing left" id="wingL" role="button" tabindex="0" aria-label="上一卷">
+        <img id="peekLa" alt="" draggable="false" />
+        <img id="peekLb" alt="" draggable="false" />
+      </div>
+      <div class="wing right" id="wingR" role="button" tabindex="0" aria-label="下一卷">
+        <img id="peekRa" alt="" draggable="false" />
+        <img id="peekRb" alt="" draggable="false" />
+      </div>
+
+      <div class="frame-window" id="frame">
+        <div class="strip" id="strip">
+          <img class="slide" id="imgPrev" alt="" draggable="false" decoding="async" />
+          <img class="slide" id="imgCurr" alt="" draggable="false" decoding="async" fetchpriority="high" />
+          <img class="slide" id="imgNext" alt="" draggable="false" decoding="async" />
+        </div>
+        <div class="stamp" id="stamp" hidden></div>
+      </div>
+
+      <div class="seal">汤问</div>
+
+      <button class="lamp" id="lamp" type="button" aria-pressed="false" aria-label="提示关" title="提示关 · 开了才能求灯">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M9 21h6v-1.4A7 7 0 0 0 19 13c0-3.87-3.13-7-7-7S5 9.13 5 13a7 7 0 0 0 4 6.6V21z"/>
+          <path d="M10 22h4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <button class="sound" id="sound" type="button" aria-label="声音开关" title="声音开关">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 9v6h4l5 4V5L8 9H4z"/>
+          <path d="M16.5 8.5a5 5 0 0 1 0 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          <path class="slash" d="M3 3l18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+
+      <button class="nav prev" id="prev" type="button" aria-label="上一卷"><span>‹</span></button>
+      <button class="nav next" id="next" type="button" aria-label="下一卷"><span>›</span></button>
+
+      <div class="plaque">
+        <!-- 卷号与难度、汤色同一行：竖版从 .plaque 的 top:85vw 到 .read 的 102vw
+             只剩 ~67px，标签另起一行会压到汤面。所以 #no 是个 span，
+             难度和汤色那两枚小印是它的兄弟节点（不放在 #no 里面 —— JS 会写 #no 的 textContent）。
+             紧凑态那一行更窄（.plaque 右侧留了 200px 给顶栏图标群），两枚印加上卷号
+             约 96px，仍在一行内 —— 加第三枚之前先读 tools/compact-scan.mjs 量出来的六段高度。 -->
+        <div class="no"><span id="no">01</span><span class="diff" id="diff" hidden></span><span class="soup" id="soup" hidden></span></div>
+        <h1 id="title">妹妹的房间</h1>
+      </div>
+
+      <!-- 搜剧本：宽屏是常驻输入条（横版浮在顶墙中央，竖版画廊拉到 62vw），
+           紧凑态没地方放整条，收成顶栏里一枚放大镜，点开才是整屏浮层。
+           两种形态共用这一份 DOM，见 styles.css 里 .stage.compact .finder 那一段。 -->
+      <div class="finder" id="finder">
+        <div class="finder-box">
+          <svg class="find-glass" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M10.5 3a7.5 7.5 0 1 0 4.55 13.46l4.24 4.25 1.42-1.42-4.25-4.24A7.5 7.5 0 0 0 10.5 3zm0 2a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11z"/>
+          </svg>
+          <input id="findInput" type="search" autocomplete="off" enterkeyhint="search"
+                 placeholder="搜剧本 · 卷名 / 卷号 / 汤色" aria-label="搜剧本" />
+          <button class="find-clear" id="findClear" type="button" aria-label="清空" hidden>×</button>
+        </div>
+        <button class="find-fold" id="findFold" type="button" aria-label="搜剧本" title="搜剧本 · 按 K">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M10.5 3a7.5 7.5 0 1 0 4.55 13.46l4.24 4.25 1.42-1.42-4.25-4.24A7.5 7.5 0 0 0 10.5 3zm0 2a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11z"/>
+          </svg>
+        </button>
+        <!-- 汤色筛选（清汤 / 红汤 / 黑汤）不在这儿：它是 #findList 里的第一行
+             （sticky 的 li.ftags，由 app.js 生成）。跟列表同一个框、同一块滚动区，
+             就不用再算一块绝对定位的高度，也不动 .finder 自身的高度
+             —— 探针量的正是它的高度和它压不压画卷。 -->
+        <ol class="find-list" id="findList" hidden></ol>
+      </div>
+
+      <div class="read" id="read">
+        <p class="surface on" id="surface"></p>
+      </div>
+
+      <p class="heard" id="heard"></p>
+      <p class="status" id="status"></p>
+      <!-- 读屏播报出口。这一局的回答全是「看」的（印章一闪、记录条一列），
+           不给读屏留一个口，用读屏的人问完一句什么都收不到。
+           单独一件 1×1 的元素（不是给 .stamp 挂 aria-live）：
+           .stamp 是 hidden 来 hidden 去的，藏起来的子树根本不会被播报。 -->
+      <p class="sr-verdict" id="srVerdict" role="status" aria-live="polite" aria-atomic="true"></p>
+
+      <aside class="dossier" id="dossier">
+        <div class="player">
+          <label for="playerName">名</label>
+          <input id="playerName" maxlength="8" autocomplete="off" />
+        </div>
+        <div class="meter">
+          <span id="askCount">问 0</span>
+          <span id="elapsed">00:00</span>
+          <!-- 停表的第二个出口：紧凑态 #elapsed 是 display:none，
+               这里不另开一个的话，手机上「计时停了」这件事就完全看不见。 -->
+          <span id="pauseTag" hidden>停表</span>
+          <span id="lastMs"></span>
+        </div>
+        <div class="keys" id="keys" hidden></div>
+        <ol class="ledger" id="ledger"></ol>
+        <p class="hint-line" id="hintLine" hidden></p>
+        <button class="board-open" id="boardOpen" type="button">排行榜</button>
+      </aside>
+
+      <div class="reveal" id="reveal" hidden>
+        <span class="reveal-ring" aria-hidden="true"></span>
+        <div class="reveal-plate">
+          <i class="reveal-tick tl" aria-hidden="true"></i>
+          <i class="reveal-tick tr" aria-hidden="true"></i>
+          <i class="reveal-tick bl" aria-hidden="true"></i>
+          <i class="reveal-tick br" aria-hidden="true"></i>
+          <div class="reveal-kicker" id="revealKicker">关键点</div>
+          <div class="reveal-title" id="revealTitle"></div>
+          <div class="reveal-count" id="revealCount"></div>
+        </div>
+      </div>
+
+      <div class="finale" id="finale" hidden>
+        <div class="finale-scrim" aria-hidden="true"></div>
+        <div class="finale-scroll" id="finaleScroll" role="dialog" aria-label="结案">
+          <i class="finale-corner tl" aria-hidden="true"></i>
+          <i class="finale-corner tr" aria-hidden="true"></i>
+          <i class="finale-corner bl" aria-hidden="true"></i>
+          <i class="finale-corner br" aria-hidden="true"></i>
+          <span class="finale-mark" aria-hidden="true">汤问</span>
+          <div class="finale-body">
+            <div class="finale-kicker">结 案</div>
+            <h2 class="finale-title" id="finaleTitle"></h2>
+            <div class="finale-rule" aria-hidden="true"></div>
+            <p class="finale-bottom" id="finaleBottom"></p>
+            <div class="finale-stats" id="finaleStats"></div>
+          </div>
+          <div class="finale-chop" aria-hidden="true">结案</div>
+          <div class="finale-tip">轻触收起</div>
+        </div>
+      </div>
+
+      <div class="board-layer" id="boardLayer" hidden>
+        <div class="board-sheet">
+          <div class="board-head">
+            <span>排行榜</span>
+            <button type="button" id="boardClose">关</button>
+          </div>
+          <div class="board-sub" id="boardSub"></div>
+          <ol class="board" id="board"></ol>
+        </div>
+      </div>
+
+      <div class="dock">
+        <form class="type-line" id="typeLine">
+          <input id="typed" maxlength="400" autocomplete="off" placeholder="问一句是非" enterkeyhint="send" />
+          <button type="submit" class="ask-btn">问</button>
+        </form>
+        <!-- 求灯原来在「询问记录」面板里当一行（虚线框、宽度 100%），埋在记录中间，
+             用户报「注意不到」。现在挪到输入条这一行：不在任何方框里，而且玩家正要
+             提问的时候视线就在这儿。灯灭的时候整枚收起来（syncLamp 管）。
+             图标跟左上角那盏灯同源，看到就知道是它的按钮。 -->
+        <button class="hint-ask" id="hintAsk" type="button" hidden aria-label="求灯 · 要一句提示">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M9 21h6v-1.4A7 7 0 0 0 19 13c0-3.87-3.13-7-7-7S5 9.13 5 13a7 7 0 0 0 4 6.6V21z"/>
+            <path d="M10 22h4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+          <span>求灯</span>
+        </button>
+        <button class="mic" id="mic" type="button" aria-label="按住说话">
+          <span class="rings" aria-hidden="true"></span>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21h2v-3.1A7 7 0 0 0 19 11h-2z"/>
+          </svg>
+        </button>
+      </div>
+      <div class="mic-cap" id="micCap">按住说话 · 也可打字</div>
+      <div class="hint" id="hint"></div>
+      <!-- 求灯的居中展示：AI 这句提示除了记录条里那行常驻的 `.hint-line`，再在屏幕正中浮一次。
+           为什么另开一件而不复用 #hint：那个 toast 在紧凑态是 display:none（只有画廊态有位置），
+           手机上点完求灯唯一的反馈就是记录条下面多出来的那一行字，很容易没注意到。
+           用 fixed 定位 —— 它不参与任何一段布局的高度，compact-scan 量的六段高度、
+           hint-check 量的「画卷 / 门槛」都不受影响。
+           aria-hidden：读屏那句已经由 announce('提示。…') 播过了，这里再播一遍是重复。 -->
+      <div class="hint-center" id="hintCenter" aria-hidden="true"><p></p></div>
+    </div>
+  </div>
+  <div class="grain" aria-hidden="true"></div>
+
+  <div class="boot" id="boot">
+    <div class="boot-inner">
+      <div class="boot-seal">汤问</div>
+      <div class="boot-cap" id="bootCap">开 卷 中</div>
+    </div>
+  </div>
+
+  <div class="tour" id="tour" hidden>
+    <div class="tour-sheet" role="dialog" aria-labelledby="tourTitle" aria-modal="true">
+      <button type="button" class="tour-skip" id="tourSkip">跳过</button>
+      <div class="tour-kicker">入 馆</div>
+      <h2 class="tour-title" id="tourTitle">夜馆规矩</h2>
+      <div class="tour-body" id="tourBody">
+        <section class="tour-card">
+          <i class="tour-no" aria-hidden="true">壹</i>
+          <h3>看汤面</h3>
+          <p>金框里是故事的一半。另一半，问出来。</p>
+        </section>
+        <section class="tour-card" hidden>
+          <i class="tour-no" aria-hidden="true">贰</i>
+          <h3>换一卷</h3>
+          <p>左右滑，或点两侧画框。顶上的搜索框认卷名、认卷里的字，也认汤色——清汤、红汤、黑汤，按今天想喝哪一口挑。</p>
+        </section>
+        <section class="tour-card" hidden>
+          <i class="tour-no" aria-hidden="true">叁</i>
+          <h3>问是非</h3>
+          <p>打字，或按住麦克风。馆里只答七句：</p>
+          <p class="tour-tiers">是 · 不是 · 是也不是 · 部分对 · 接近了 · 无关 · 不重要</p>
+        </section>
+        <section class="tour-card" hidden>
+          <i class="tour-no" aria-hidden="true">肆</i>
+          <h3>结案与求灯</h3>
+          <p>关键点问齐，汤底自现。灯默认是灭的——点亮方能求灯，灯语留在卷宗；无灯结案，榜上记你一盏「孤灯」。</p>
+        </section>
+      </div>
+      <p class="tour-note">三十四卷，由浅入深 · 一分钟没动静，计时自会停</p>
+      <div class="tour-nav">
+        <div class="tour-dots" id="tourDots" aria-label="引导步骤"></div>
+        <span class="tour-count" id="tourCount">1 / 4</span>
+      </div>
+      <button type="button" class="tour-go" id="tourGo">下一步</button>
+    </div>
+  </div>
+
+  <script src="./audio.js?v=31"></script>
+  <script src="./app.js?v=31"></script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+/images/*
+  Cache-Control: public, max-age=86400
+
+# 后台是内部工具，文件名不带 hash，改动要立刻可见 —— 每次回源校验
+/admin/*
+  Cache-Control: no-cache
+
+/app.js*
+  Cache-Control: public, max-age=31536000, immutable
+
+/audio.js
+  Cache-Control: public, max-age=31536000, immutable
+
+/styles.css
+  Cache-Control: public, max-age=31536000, immutable

@@ -1,0 +1,226 @@
+/* 汤问 · 后台
+   跟正馆同一套暗色底 + 朱砂金，但这里是「账房」不是「馆内」：
+   去掉了颗粒噪点、卷轴、动画，只留纸色、金色细边和等宽数字。
+   不引任何 CSS/JS 库，一个请求也不多发。 */
+
+:root {
+  --soot: #070605;
+  --panel: #100c09;
+  --line: rgba(215, 161, 90, .16);
+  --line-strong: rgba(215, 161, 90, .34);
+  --paper: #e4d5bb;
+  --dim: #9c8b73;
+  --faint: #6d6152;
+  --lamp: #d7a15a;
+  --cinnabar: #9c2b1a;
+  --moss: #7d9a6a;
+  --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --serif: "Noto Serif SC", "Songti SC", "Source Han Serif SC", "SimSun", serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--soot);
+  color: var(--paper);
+  font-family: var(--serif);
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  /* 账房的地面：一层极淡的暖色晕，避免大面积纯黑发闷 */
+  background-image: radial-gradient(120% 60% at 50% -10%, rgba(215, 161, 90, .07), transparent 62%);
+  background-repeat: no-repeat;
+}
+
+a { color: var(--lamp); }
+button, input, select { font: inherit; color: inherit; }
+[hidden] { display: none !important; }
+
+/* ---------------- 通用件 ---------------- */
+
+.wrap { max-width: 1180px; margin: 0 auto; padding: 26px 20px 80px; }
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 18px 18px 16px;
+  margin-bottom: 16px;
+}
+
+.card > h2 {
+  margin: 0 0 14px;
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: .22em;
+  color: var(--lamp);
+}
+.card > h2 .sub {
+  margin-left: 10px;
+  letter-spacing: 0;
+  font-size: 12px;
+  color: var(--faint);
+  font-family: var(--mono);
+}
+
+.btn {
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  border-radius: 3px;
+  padding: 6px 13px;
+  font-size: 13px;
+  color: var(--paper);
+  cursor: pointer;
+  transition: background .16s, border-color .16s, color .16s;
+}
+.btn:hover { background: rgba(215, 161, 90, .1); border-color: var(--lamp); }
+.btn:disabled { opacity: .4; cursor: default; }
+.btn.danger:hover { background: rgba(156, 43, 26, .22); border-color: #c4523c; color: #f0d9cc; }
+.btn.tiny { padding: 3px 9px; font-size: 12px; }
+
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 3px; overflow: hidden; }
+.seg button {
+  background: transparent; border: 0; padding: 6px 12px; cursor: pointer;
+  font-size: 13px; color: var(--dim); font-family: var(--mono);
+}
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button.on { background: rgba(215, 161, 90, .16); color: var(--paper); }
+
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.muted { color: var(--dim); }
+.faint { color: var(--faint); }
+.empty { color: var(--faint); font-size: 13px; padding: 14px 0; text-align: center; }
+
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid rgba(215, 161, 90, .09); }
+th { color: var(--faint); font-weight: 400; font-size: 12px; letter-spacing: .08em; }
+td.num, th.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+tbody tr:hover { background: rgba(215, 161, 90, .045); }
+tbody tr:last-child td { border-bottom: 0; }
+
+/* ---------------- 顶栏 ---------------- */
+
+.top {
+  display: flex; align-items: baseline; gap: 14px;
+  padding: 4px 2px 20px;
+}
+.top .seal {
+  font-size: 19px; letter-spacing: .3em; color: var(--paper);
+  border: 1px solid var(--line-strong); border-radius: 3px; padding: 5px 10px 5px 13px;
+}
+.top .kicker { font-size: 12px; letter-spacing: .3em; color: var(--faint); }
+.top .grow { flex: 1; }
+.top .today { font-family: var(--mono); font-size: 12px; color: var(--dim); }
+
+/* ---------------- 登录 ---------------- */
+
+.login { max-width: 420px; margin: 12vh auto 0; }
+.login .seal { margin-bottom: 22px; text-align: center; }
+.login .seal span {
+  display: inline-block; font-size: 22px; letter-spacing: .34em;
+  border: 1px solid var(--line-strong); border-radius: 3px; padding: 8px 12px 8px 18px;
+}
+.login h1 { margin: 0 0 6px; font-size: 17px; font-weight: 500; letter-spacing: .16em; text-align: center; }
+.login p.tip { margin: 0 0 22px; font-size: 12.5px; line-height: 1.8; color: var(--faint); text-align: center; }
+.login form { display: flex; flex-direction: column; gap: 10px; }
+.login input {
+  background: #0a0806; border: 1px solid var(--line-strong); border-radius: 3px;
+  padding: 11px 12px; font-family: var(--mono); font-size: 14px; letter-spacing: .06em;
+  width: 100%;
+}
+.login input:focus { outline: 0; border-color: var(--lamp); background: #0d0a07; }
+.login .err { min-height: 20px; font-size: 12.5px; color: #d98a72; }
+.login .go { padding: 11px; letter-spacing: .3em; }
+
+/* ---------------- KPI ---------------- */
+
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.kpi {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 4px;
+  padding: 13px 15px 14px;
+}
+.kpi .k { font-size: 12px; color: var(--faint); letter-spacing: .1em; }
+.kpi .v { font-family: var(--mono); font-size: 27px; line-height: 1.25; margin-top: 3px; font-variant-numeric: tabular-nums; }
+.kpi .d { font-size: 11.5px; color: var(--faint); font-family: var(--mono); }
+.kpi.hot .v { color: var(--lamp); }
+
+/* ---------------- 图 ---------------- */
+
+.chart-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; }
+.chart-head .grow { flex: 1; }
+.chart-box { position: relative; }
+.chart-box svg { display: block; width: 100%; height: auto; }
+.tipbox {
+  position: absolute; pointer-events: none; z-index: 3;
+  background: #0a0806; border: 1px solid var(--line-strong); border-radius: 3px;
+  padding: 6px 9px; font-family: var(--mono); font-size: 12px; line-height: 1.6;
+  white-space: nowrap; transform: translate(-50%, -100%);
+}
+.tipbox b { color: var(--lamp); font-weight: 500; }
+
+/* ---------------- 双栏 ---------------- */
+
+.cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 860px) { .cols { grid-template-columns: 1fr; } }
+
+/* ---------------- 卷宗核对 ---------------- */
+
+.vols { display: flex; flex-direction: column; }
+.vol { border-bottom: 1px solid rgba(215, 161, 90, .09); }
+.vol:last-child { border-bottom: 0; }
+.vol > summary {
+  display: flex; align-items: center; gap: 10px; cursor: pointer;
+  padding: 9px 4px; list-style: none; font-size: 13.5px;
+}
+.vol > summary::-webkit-details-marker { display: none; }
+.vol > summary:hover { background: rgba(215, 161, 90, .045); }
+.vol .idx { font-family: var(--mono); font-size: 12px; color: var(--faint); width: 26px; }
+.vol .t { flex: 1; }
+.vol .tag {
+  font-family: var(--mono); font-size: 11px; color: var(--dim);
+  border: 1px solid var(--line); border-radius: 2px; padding: 1px 6px;
+}
+/* 汤色那枚签：后台是核对分类的地方，一眼扫过去该看得出哪几卷是黑汤。
+   三个色号与 web/styles.css 顶上那三行是同一套（后台是独立页，不加载那份样式表，
+   所以只能各写一份 —— 改色的时候两处一起改）。 */
+.vol .tag.soup[data-soup="清汤"] { color: #8fae7a; border-color: rgba(143, 174, 122, .55); }
+.vol .tag.soup[data-soup="红汤"] { color: #c4563c; border-color: rgba(196, 86, 60, .60); }
+.vol .tag.soup[data-soup="黑汤"] { color: #e8d3a8; border-color: rgba(156, 43, 26, .80); }
+.vol .body { padding: 2px 4px 16px 40px; font-size: 13px; line-height: 1.85; }
+.vol .body dt { color: var(--faint); font-size: 12px; letter-spacing: .1em; margin-top: 10px; }
+.vol .body dd { margin: 3px 0 0; color: var(--paper); white-space: pre-wrap; }
+.vol .body dd.surface { color: var(--paper); }
+.vol .body dd.bottom { color: #e8b98c; }
+.vol .body ol { margin: 4px 0 0; padding-left: 20px; }
+.vol .body ol li { margin: 2px 0; }
+.vol .body ol li b { color: var(--lamp); font-weight: 500; }
+
+/* ---------------- 排行榜管理 ---------------- */
+
+.board-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.board-head .grow { flex: 1; }
+select {
+  background: #0a0806; border: 1px solid var(--line); border-radius: 3px;
+  padding: 6px 9px; font-size: 13px; max-width: 320px;
+}
+select:focus { outline: 0; border-color: var(--lamp); }
+
+/* ---------------- 页脚说明 ---------------- */
+
+.foot {
+  margin-top: 6px; padding: 14px 2px 0;
+  font-size: 12px; line-height: 1.9; color: var(--faint);
+  border-top: 1px solid rgba(215, 161, 90, .09);
+}
+.foot b { color: var(--dim); font-weight: 400; }
+
+.toast {
+  position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%);
+  background: #0a0806; border: 1px solid var(--line-strong); border-radius: 3px;
+  padding: 9px 16px; font-size: 13px; z-index: 50;
+  opacity: 0; transition: opacity .18s, transform .18s;
+}
+.toast.on { opacity: 1; transform: translateX(-50%) translateY(-6px); }

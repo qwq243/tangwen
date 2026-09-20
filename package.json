@@ -1,0 +1,11 @@
+{
+  "name": "tangwen",
+  "private": true,
+  "scripts": {
+    "deploy": "wrangler pages deploy --branch main",
+    "preview": "wrangler pages dev"
+  },
+  "devDependencies": {
+    "wrangler": "^4.34.0"
+  }
+}

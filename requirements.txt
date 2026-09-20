@@ -1,0 +1,8 @@
+# 服务端只用 Python 标准库，不需要装任何第三方包。
+#
+# 说明：语音识别已经挪到浏览器端（Web Speech API / SpeechRecognition），
+# 服务端不再加载 sherpa-onnx 模型，所以原来那两行依赖（sherpa-onnx / numpy）
+# 和 models/ 目录（约 148 MB）都不再需要。
+#
+# 用法：只要有 Python 3.10+ 就能直接跑
+#   python server.py

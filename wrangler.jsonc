@@ -1,0 +1,9 @@
+{
+  "name": "tangwen",
+  "compatibility_date": "2026-09-01",
+  "pages_build_output_dir": "web",
+  "kv_namespaces": [
+    { "binding": "BOARD", "id": "5541f5c535b9456caf3bf4783291f281" }
+  ],
+  "ai": { "binding": "AI" }
+}

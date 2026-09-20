@@ -1,0 +1,3040 @@
+{
+  "version": 1,
+  "host_role": "你是海龟汤主持人。只根据汤底、人物表（cast）与事实表判断。禁止透露汤底，禁止编造未写明的情节。玩家用语往往是汤面隐喻，先用 metaphor_map 把问题翻译成汤底事实再判断。能判是/否就判是/否。近义说法也算：猥亵、性侵、奸尸、对尸体做那种事＝恋尸侵犯。不要因为用词不好听就改成『问清楚点』。",
+  "puzzles": [
+    {
+      "id": "jumper",
+      "title": "跳楼的女人",
+      "image": "images/jumper.png",
+      "surface": "女人对世界感到绝望，于是决定跳楼。没想到跳下去的瞬间电话响了，她感到后悔，却来不及了。",
+      "bottom": "丧尸病毒爆发，女人身边的人都变成了丧尸。她以为自己是世界上仅存的人类，绝望跳楼。跳下的瞬间电话响起，说明还有其他活人。后悔已经来不及。",
+      "metaphor_map": [
+        "绝望来自误以为人类灭绝，不是普通心理危机。",
+        "电话响起证明还有其他活人。",
+        "她没能活下来。"
+      ],
+      "facts": {
+        "zombie_outbreak_happened": true,
+        "she_thought_she_was_last_human": true,
+        "phone_call_means_other_humans_live": true,
+        "she_survives_the_jump": false,
+        "call_was_an_ordinary_comfort_call_before_apocalypse": false
+      },
+      "cast": [
+        {
+          "name": "女人（她）",
+          "sex": "女",
+          "who": "叙述者；丧尸爆发后以为自己是仅存的人类，跳楼，跳下时电话响了"
+        },
+        {
+          "name": "打电话的人",
+          "sex": "未写明",
+          "who": "电话那头的人，是个活人 —— 故事只用到「还有别的活人」这一点，没写是谁"
+        }
+      ],
+      "keys": [
+        {
+          "id": "outbreak",
+          "label": "丧尸爆发",
+          "expect": true,
+          "prompt": "世界是丧尸病毒爆发后。"
+        },
+        {
+          "id": "not_last",
+          "label": "并非最后人类",
+          "expect": true,
+          "prompt": "她误以为自己是最后的人类。"
+        },
+        {
+          "id": "phone",
+          "label": "电话是活人",
+          "expect": true,
+          "prompt": "跳下时电话响，说明还有其他活人。"
+        },
+        {
+          "id": "dies",
+          "label": "没能生还",
+          "expect": true,
+          "prompt": "她没能活下来。"
+        }
+      ],
+      "difficulty": "浅",
+      "soup": "红汤"
+    },
+    {
+      "id": "exam",
+      "title": "期末考试",
+      "image": "images/exam.png",
+      "surface": "转学后这一个月，所有同学都认为我精神不正常，大家都排挤我。只有老师不这么想。可期末考试成绩下来后，我明白我真的不正常了。",
+      "bottom": "我天生有阴阳眼，自己不知道。班里只有『同桌』对我特别友好，其他同学因我像在对空气说话而排挤我。直到我当众叫出同桌的名字，老师才明白我不是精神病：那个同桌是多年前死在学校的学生，别人看不见。老师早知传说，却不敢说破。成绩榜上没有同桌的名字，我才明白自己和正常人不同。",
+      "metaphor_map": [
+        "『不正常』是阴阳眼，不是精神分裂症。",
+        "同桌是鬼，只有我看得见。",
+        "同学排挤是因为看见我在对空气说话。",
+        "老师其实知道真相。",
+        "成绩单上没有同桌，是关键证据。"
+      ],
+      "facts": {
+        "narrator_has_yin_yang_eyes": true,
+        "deskmate_is_a_ghost": true,
+        "classmates_cannot_see_the_deskmate": true,
+        "teacher_knows_the_truth": true,
+        "narrator_is_simply_mentally_ill_with_no_supernatural": false,
+        "deskmate_appears_on_the_grade_list": false
+      },
+      "cast": [
+        {
+          "name": "我",
+          "sex": "未写明",
+          "who": "转学生，天生有阴阳眼；材料没写性别"
+        },
+        {
+          "name": "同桌",
+          "sex": "未写明",
+          "who": "多年前死在学校的学生，鬼；只有「我」看得见；材料没写性别"
+        },
+        {
+          "name": "老师",
+          "sex": "未写明",
+          "who": "知道传说也明白真相，却不敢说破；材料没写性别"
+        }
+      ],
+      "keys": [
+        {
+          "id": "eyes",
+          "label": "阴阳眼",
+          "expect": true,
+          "prompt": "所谓不正常是阴阳眼。"
+        },
+        {
+          "id": "ghost",
+          "label": "同桌是鬼",
+          "expect": true,
+          "prompt": "同桌是别人看不见的亡魂。"
+        },
+        {
+          "id": "teacher",
+          "label": "老师知情",
+          "expect": true,
+          "prompt": "老师其实知道真相。"
+        },
+        {
+          "id": "list",
+          "label": "榜上无名",
+          "expect": true,
+          "prompt": "成绩单上没有同桌的名字。"
+        }
+      ],
+      "difficulty": "中",
+      "soup": "红汤"
+    },
+    {
+      "id": "song",
+      "title": "歌声",
+      "image": "images/song.png",
+      "surface": "男人和女人在喝酒，突然听到熟悉的歌声。不久后，二人都死了。",
+      "bottom": "项羽和虞姬在帐中饮酒，忽然听到包围他们的汉军唱起楚地民歌，明白家乡已沦陷。虞姬拔剑自刎，项羽逃到江边后也自刎。这就是四面楚歌。",
+      "metaphor_map": [
+        "男人是项羽，女人是虞姬。",
+        "熟悉的歌声是楚歌，来自敌军。",
+        "二人都是自刎，不是被毒死或被人杀死。",
+        "这是历史典故，不是现代酒吧。"
+      ],
+      "facts": {
+        "they_are_xiang_yu_and_yu_ji": true,
+        "song_is_chu_folk_song_sung_by_encircling_army": true,
+        "setting_is_ancient_military_camp": true,
+        "both_died_by_suicide_with_swords": true,
+        "story_is_the_idiom_si_mian_chu_ge": true,
+        "they_were_poisoned": false
+      },
+      "cast": [
+        {
+          "name": "男人",
+          "sex": "男",
+          "who": "项羽；逃到江边后自刎"
+        },
+        {
+          "name": "女人",
+          "sex": "女",
+          "who": "虞姬；拔剑自刎"
+        }
+      ],
+      "keys": [
+        {
+          "id": "who",
+          "label": "项羽虞姬",
+          "expect": true,
+          "prompt": "男人是项羽，女人是虞姬。"
+        },
+        {
+          "id": "chu",
+          "label": "四面楚歌",
+          "expect": true,
+          "prompt": "熟悉的歌声是汉军唱的楚歌。"
+        },
+        {
+          "id": "suicide",
+          "label": "二人自刎",
+          "expect": true,
+          "prompt": "二人都是自刎，不是被毒死。"
+        }
+      ],
+      "difficulty": "浅",
+      "soup": "红汤"
+    },
+    {
+      "id": "promise",
+      "title": "男孩的承诺",
+      "image": "images/promise.png",
+      "surface": "女孩和男孩提了一个条件，只要男孩做到就做他的女朋友。后来男孩做到了，女孩却疯了。",
+      "bottom": "条件是：一起考进同一所医学院。男孩成绩很差，为了兑现约定、证明有多爱她，他自杀并把遗体捐给医学院做解剖。女孩在解剖课上看到了男孩的头颅，受惊之后疯了。他确实『做到了』进同一所学校，只是以尸体的方式。",
+      "metaphor_map": [
+        "条件是考进同一所医学院，不是普通约会任务。",
+        "做到了＝遗体被接收，出现在解剖课上。",
+        "女孩发疯是因为见到的是头颅，不是活人兑现承诺。"
+      ],
+      "facts": {
+        "the_deal_was_to_enter_the_same_medical_school": true,
+        "boy_had_poor_grades": true,
+        "boy_died_by_suicide_and_donated_his_body": true,
+        "girl_saw_his_head_in_anatomy_class": true,
+        "girl_went_insane_from_that_shock": true,
+        "he_became_her_boyfriend_while_alive": false
+      },
+      "cast": [
+        {
+          "name": "男孩",
+          "sex": "男",
+          "who": "成绩差，自杀捐出遗体，以尸体的方式「考进同一所医学院」"
+        },
+        {
+          "name": "女孩",
+          "sex": "女",
+          "who": "解剖课上看到男孩的头颅，受惊发疯"
+        }
+      ],
+      "keys": [
+        {
+          "id": "med_school",
+          "label": "约定上医学院",
+          "expect": true,
+          "prompt": "条件是考进同一所医学院。"
+        },
+        {
+          "id": "suicide",
+          "label": "他自杀捐遗体",
+          "expect": true,
+          "prompt": "男孩成绩不够，自杀后把遗体捐给了医学院。"
+        },
+        {
+          "id": "anatomy",
+          "label": "解剖课见到",
+          "expect": true,
+          "prompt": "女孩在解剖课上看到男孩的头颅才疯的。"
+        }
+      ],
+      "difficulty": "浅",
+      "soup": "红汤"
+    },
+    {
+      "id": "opera",
+      "title": "唱戏的女人",
+      "image": "images/opera.png",
+      "surface": "这几天邻居都说晚上总能听到有女子唱戏曲，声音很凄惨。今晚我回家时也听到了，害怕地跑回了家。没一会儿，楼上传来凄厉的惨叫，我终于知道那声音是什么了。",
+      "bottom": "电梯在维修时，一个女人低头玩手机，从高处摔死在停于一楼的电梯轿厢顶上。修好后工人不知情，电梯恢复运行。她的手机还在身上。丈夫白天找人，晚上反复拨她的电话；凄惨的戏曲其实是接通后的彩铃/她自己唱段的来电声，在井道里回荡。这晚丈夫正好走进电梯拨通，轿厢一动，他在那方寸里找到了妻子——惨叫是他发出的。",
+      "metaphor_map": [
+        "唱戏不是鬼，是死者手机被反复拨通。",
+        "女人一开始就已经摔死在电梯顶。",
+        "惨叫是丈夫在电梯里发现尸体。",
+        "维修期间的轿厢顶，是她一直所在的位置。"
+      ],
+      "facts": {
+        "woman_fell_onto_the_elevator_car_during_maintenance": true,
+        "opera_sound_is_a_phone_ringtone_or_call": true,
+        "husband_has_been_calling_her": true,
+        "scream_is_the_husband_finding_the_body": true,
+        "there_is_no_ghost_singing": true,
+        "elevator_was_restarted_without_knowing_the_body": true
+      },
+      "cast": [
+        {
+          "name": "女人",
+          "sex": "女",
+          "who": "电梯维修时摔死在轿厢顶上；所谓戏曲声是她手机接通后的彩铃/唱段"
+        },
+        {
+          "name": "丈夫",
+          "sex": "男",
+          "who": "白天找人、晚上反复拨她电话；楼上的惨叫是他发出的"
+        },
+        {
+          "name": "我",
+          "sex": "未写明",
+          "who": "同楼的邻居；材料没写性别"
+        }
+      ],
+      "keys": [
+        {
+          "id": "fell",
+          "label": "她摔在电梯",
+          "expect": true,
+          "prompt": "女人维修时坠在一楼轿厢顶上，已经死了。"
+        },
+        {
+          "id": "ringtone",
+          "label": "戏曲是电话",
+          "expect": true,
+          "prompt": "夜里的唱戏声是丈夫打电话接通后的铃声/唱段。"
+        },
+        {
+          "id": "scream",
+          "label": "惨叫是丈夫",
+          "expect": true,
+          "prompt": "楼上的惨叫是丈夫在电梯里找到妻子时发出的。"
+        }
+      ],
+      "difficulty": "浅",
+      "soup": "红汤"
+    },
+    {
+      "id": "newcomers",
+      "title": "新人",
+      "image": "images/newcomers.png",
+      "surface": "对新人立台前，台下众人笑开颜。无法相拥惹人泣，近如咫尺难团圆。",
+      "bottom": "十九世纪欧洲流行畸形表演。某处展览台上立着两个「新鲜出炉」的人彘：一对出国蜜月的新婚夫妻被切去手脚，分别摆进花瓶。两人的头在瓶口上相望，虽然很近，却永远无法相拥。或许其中一个今天就会被高价拍走，此生难见。",
+      "metaphor_map": [
+        "『新人』是刚被制成展品的新婚夫妻，不是舞台上的演员或新郎新娘正常拜堂。",
+        "『立台前』是被摆上展览台。",
+        "『台下笑开颜』是看客把这当成热闹的畸形秀。",
+        "『近如咫尺难团圆』是两颗头隔着花瓶对望，肢体已无，无法拥抱。",
+        "他们是人彘，被切去手脚放进花瓶。"
+      ],
+      "facts": {
+        "setting_is_nineteenth_century_freak_show": true,
+        "the_couple_are_newlyweds_on_honeymoon": true,
+        "their_limbs_were_removed": true,
+        "they_were_placed_in_vases": true,
+        "they_can_still_embrace": false,
+        "this_is_an_ordinary_wedding_stage": false,
+        "audience_is_laughing_at_a_comedy_act": false
+      },
+      "cast": [
+        {
+          "name": "新人的丈夫",
+          "sex": "男",
+          "who": "蜜月途中被切去手脚、摆进花瓶展出的人彘之一"
+        },
+        {
+          "name": "新人的妻子",
+          "sex": "女",
+          "who": "同上；两人的头隔瓶相望，再也无法相拥"
+        }
+      ],
+      "keys": [
+        {
+          "id": "freak_show",
+          "label": "是畸形展览",
+          "expect": true,
+          "prompt": "场景是畸形秀展览台，不是普通婚礼或戏曲舞台。"
+        },
+        {
+          "id": "newlyweds",
+          "label": "两人是新婚",
+          "expect": true,
+          "prompt": "展品是一对出国蜜月的新婚夫妻。"
+        },
+        {
+          "id": "limbless",
+          "label": "手脚被切",
+          "expect": true,
+          "prompt": "两人被切去手脚，做成了人彘。"
+        },
+        {
+          "id": "vases",
+          "label": "装在花瓶里",
+          "expect": true,
+          "prompt": "他们被摆进花瓶，头在瓶口相望却无法相拥。"
+        }
+      ],
+      "difficulty": "中",
+      "soup": "黑汤"
+    },
+    {
+      "id": "train",
+      "title": "火车",
+      "image": "images/train.png",
+      "surface": "这是一辆行驶的火车。我刚上车不久，坐上了最后一节车厢。车厢里流了很多血，我知道我快要活不长了……",
+      "bottom": "所谓火车，是把人一节节手术衔接起来的人列。每一节的头尾必须接好。我是刚拼接上的最后一节车厢。技术不够完善，手术出了问题，我流了很多血。有人说「这节车厢衔接失败了，准备换掉吧」。我听见了，所以知道自己活不长了。",
+      "metaphor_map": [
+        "火车不是铁轨上的列车，是人体一节节接成的『人车』。",
+        "上车/坐上最后一节＝我刚被接到队尾。",
+        "车厢里的血是手术创口在流血。",
+        "活不长了是因为衔接失败，要把这一节换掉。"
+      ],
+      "facts": {
+        "train_is_made_of_human_bodies": true,
+        "narrator_is_the_newly_attached_last_car": true,
+        "blood_is_from_a_failed_joining_surgery": true,
+        "staff_plan_to_replace_the_failed_segment": true,
+        "this_is_an_ordinary_railroad_accident": false,
+        "narrator_boarded_a_real_train": false
+      },
+      "cast": [
+        {
+          "name": "我",
+          "sex": "未写明",
+          "who": "刚被手术接上去的最后一节「车厢」，也就是一个人；材料没写性别"
+        },
+        {
+          "name": "车上的人",
+          "sex": "未写明",
+          "who": "说「这节车厢衔接失败了，准备换掉吧」的那些人；材料没写性别"
+        }
+      ],
+      "keys": [
+        {
+          "id": "human_train",
+          "label": "火车是人拼的",
+          "expect": true,
+          "prompt": "火车由人体一节节手术衔接而成，不是真列车。"
+        },
+        {
+          "id": "last_car",
+          "label": "我是最后一节",
+          "expect": true,
+          "prompt": "叙述者是刚接上的最后一节车厢。"
+        },
+        {
+          "id": "surgery",
+          "label": "血来自手术",
+          "expect": true,
+          "prompt": "血是衔接手术失败流出的。"
+        },
+        {
+          "id": "replace",
+          "label": "失败要换掉",
+          "expect": true,
+          "prompt": "有人判定这节衔接失败，准备换掉，所以他活不长。"
+        }
+      ],
+      "difficulty": "浅",
+      "soup": "黑汤"
+    },
+    {
+      "id": "nanny",
+      "title": "保姆",
+      "image": "images/nanny.png",
+      "surface": "保姆已经一周没来了，但我发现家里好像有人。可能是害怕的原因，我每天都会掉头发，口臭。几天后警方发现了我和保姆的尸体。",
+      "bottom": "我有梦游症。梦游时杀死了保姆，把尸体扔进别墅水箱。尸体腐烂后，保姆的头发顺着水管出来，我洗头时以为自己在掉发；喝水吃饭用的是尸水，所以口臭。几天后我又梦游走到水箱前，失足掉了进去。家里『好像有人』，其实是水箱里的尸体。",
+      "metaphor_map": [
+        "保姆不是离职，而是已被叙述者在梦游中杀死。",
+        "『家里好像有人』是水箱里的尸体。",
+        "掉发是水管里冲出来的保姆头发。",
+        "口臭来自被污染的食水。",
+        "叙述者后来也掉进水箱死了。"
+      ],
+      "facts": {
+        "nanny_simply_quit_the_job": false,
+        "nanny_was_killed_by_narrator_while_sleepwalking": true,
+        "body_was_put_in_water_tank": true,
+        "hair_in_drain_is_nannys_hair": true,
+        "bad_breath_from_corpse_water": true,
+        "someone_alive_was_hiding_in_the_house": false,
+        "narrator_died_falling_into_the_tank": true,
+        "narrator_has_sleepwalking": true
+      },
+      "cast": [
+        {
+          "name": "我",
+          "sex": "未写明",
+          "who": "有梦游症；梦游时杀死保姆，最后自己掉进水箱；材料没写性别"
+        },
+        {
+          "name": "保姆",
+          "sex": "未写明",
+          "who": "被梦游的「我」杀死扔进水箱；材料只写「保姆」二字，没写性别"
+        }
+      ],
+      "keys": [
+        {
+          "id": "sleepwalk_kill",
+          "label": "梦游杀了保姆",
+          "expect": true,
+          "prompt": "叙述者梦游时杀死了保姆。"
+        },
+        {
+          "id": "tank",
+          "label": "尸体在水箱",
+          "expect": true,
+          "prompt": "保姆尸体被扔进别墅水箱。"
+        },
+        {
+          "id": "hair",
+          "label": "掉的是她的头发",
+          "expect": true,
+          "prompt": "所谓掉发是水管里冲出来的保姆头发。"
+        },
+        {
+          "id": "water",
+          "label": "喝的是尸水",
+          "expect": true,
+          "prompt": "口臭来自被尸体污染的食水。"
+        }
+      ],
+      "difficulty": "中",
+      "soup": "黑汤"
+    },
+    {
+      "id": "blind",
+      "title": "盲人",
+      "image": "images/blind.png",
+      "surface": "我是一个盲人。我怀疑家里进贼了。最近家里有些奇怪的舔舐的声音，接着是咀嚼的声音。过了几天，我又听到窗户被打开的声音，之后传出扭打的声音，随后又是舔舐和咀嚼。",
+      "bottom": "我是一个盲人，有一天意外摔倒，失血过多而死。几天后导盲犬饥饿，开始舔地板上我流的血充饥。血舔光后，它开始吃我。又过了很长时间，家里翻进了小偷。狗已经尝过「美味的我」，自然没有放过他。叙述者从头到尾都听得见，是因为这是死者视角，并不是他还活着。",
+      "metaphor_map": [
+        "叙述者在第一段声音出现前就已经死了。",
+        "舔舐是导盲犬在舔血，咀嚼是狗在吃尸体。",
+        "开窗和扭打是小偷翻入后与狗搏斗。",
+        "第二轮舔舐咀嚼是狗在吃小偷。",
+        "家里确实进贼了，但贼也死了。"
+      ],
+      "facts": {
+        "narrator_is_blind": true,
+        "narrator_died_from_a_fall_and_blood_loss": true,
+        "first_licking_is_the_guide_dog_drinking_blood": true,
+        "first_chewing_is_the_dog_eating_the_narrator": true,
+        "a_thief_later_broke_in": true,
+        "the_dog_killed_and_ate_the_thief": true,
+        "narrator_was_alive_throughout": false,
+        "the_sounds_were_a_human_burglar_eating": false
+      },
+      "cast": [
+        {
+          "name": "我",
+          "sex": "未写明",
+          "who": "盲人；摔倒失血而死后被导盲犬吃掉，全程是死者视角；材料没写性别"
+        },
+        {
+          "name": "导盲犬",
+          "sex": "未写明",
+          "who": "动物，不是人；先舔血、后吃主人与闯进来的小偷"
+        },
+        {
+          "name": "小偷",
+          "sex": "男",
+          "who": "翻窗进来，被已经吃过人的狗吃掉"
+        }
+      ],
+      "keys": [
+        {
+          "id": "already_dead",
+          "label": "我早已死了",
+          "expect": true,
+          "prompt": "叙述者摔倒失血而死，汤面里的「我」是死者视角。"
+        },
+        {
+          "id": "blood",
+          "label": "舔的是血",
+          "expect": true,
+          "prompt": "先出现的舔舐是导盲犬在舔地板上的血。"
+        },
+        {
+          "id": "eaten",
+          "label": "嚼的是我",
+          "expect": true,
+          "prompt": "随后的咀嚼是狗开始吃叙述者的尸体。"
+        },
+        {
+          "id": "thief",
+          "label": "后来进了贼",
+          "expect": true,
+          "prompt": "开窗和扭打是小偷翻入，狗又把他吃了。"
+        }
+      ],
+      "difficulty": "中",
+      "soup": "黑汤"
+    },
+    {
+      "id": "rental",
+      "title": "出租房",
+      "image": "images/rental.png",
+      "surface": "我搬进了一个新房子，房间里经常有类似老鼠爬的声音，但毕竟便宜，我也睡得很香。没多久房东谈了一个女朋友，老鼠的声音好像也没了。突然的安静，却让我不能安心入睡……",
+      "bottom": "我早就知道房东在屋顶偷窥我。被人注视会给我安全感，所以对来自房顶的偷窥并不不适。直到他谈了女朋友，安静的天花板让我辗转难眠。我趁他帮我修电路的机会，让他永远待在了天花板里。透过那小小的黑洞，我知道他还在看着我，我又能安心入眠。所谓老鼠爬的声音，是他偷窥时发出的声响。",
+      "metaphor_map": [
+        "『老鼠爬的声音』是房东在天花板夹层里活动、偷窥时发出的声响，不是真老鼠。",
+        "叙述者一开始就知道被偷窥，并且因此才睡得着。",
+        "房东谈恋爱后不再上来，天花板安静，叙述者反而失眠。",
+        "『修电路』是把房东永久封进天花板的机会。",
+        "后来能睡着，是因为天花板上又有一双眼睛在看他——那是被困在里面的房东。"
+      ],
+      "facts": {
+        "sounds_are_real_rats": false,
+        "sounds_are_landlord_peeping_in_the_ceiling": true,
+        "narrator_knew_about_the_peeping": true,
+        "narrator_felt_safe_being_watched": true,
+        "landlord_got_a_girlfriend_and_stopped_coming": true,
+        "narrator_sealed_landlord_in_the_ceiling": true,
+        "narrator_can_sleep_again_because_he_is_still_being_watched": true,
+        "narrator_was_unaware_and_later_scared_of_peeping": false
+      },
+      "cast": [
+        {
+          "name": "我",
+          "sex": "未写明",
+          "who": "租客；知道房东偷窥却因此睡得安稳，最后把房东封进天花板；材料没写性别"
+        },
+        {
+          "name": "房东",
+          "sex": "男",
+          "who": "在屋顶夹层偷窥的房东；谈女朋友后不来了，被「我」永久封进天花板"
+        },
+        {
+          "name": "房东的女朋友",
+          "sex": "女",
+          "who": "只写「谈了一个女朋友」，没写别的"
+        }
+      ],
+      "keys": [
+        {
+          "id": "not_rats",
+          "label": "老鼠是人",
+          "expect": true,
+          "prompt": "爬行声不是老鼠，是房东在天花板里偷窥时发出的。"
+        },
+        {
+          "id": "knew_and_liked",
+          "label": "我知情且享受",
+          "expect": true,
+          "prompt": "叙述者早就知道被偷窥，并且因为被注视才有安全感、才睡得着。"
+        },
+        {
+          "id": "quiet_after",
+          "label": "女友后他不来",
+          "expect": true,
+          "prompt": "房东谈了女朋友之后不再上来偷窥，所以声音消失。"
+        },
+        {
+          "id": "sealed",
+          "label": "房东被封进顶",
+          "expect": true,
+          "prompt": "叙述者趁修电路把房东永远留在了天花板里，好继续被看。"
+        }
+      ],
+      "difficulty": "中",
+      "soup": "黑汤"
+    },
+    {
+      "id": "pregnancy",
+      "title": "怀孕",
+      "image": "images/pregnancy.png",
+      "surface": "爱人怀孕好几个月啦，我听着孩子的胎动，兴奋不已。虽然爱人日渐消瘦，但 ta 应该能理解我了。",
+      "bottom": "我怀过宝宝，他却背叛我，害我痛失孩子。我恨他，要让他知道怀孕的不易。我偷偷喂他喝下大量蛔虫卵，把他绑在床上，每天提供「孩子」需要的养分。他的肚子因虫体繁殖而隆起，那不是胎儿。日渐消瘦是被寄生消耗。所谓胎动，是虫子在体内扭动。",
+      "metaphor_map": [
+        "表面的『爱人怀孕』其实是被绑在床上的背叛者肚子在变大。",
+        "孩子/胎动是蛔虫在蠕动，不是胎儿。",
+        "日渐消瘦是寄生消耗宿主。",
+        "『理解我』是报复：让他体会自己曾怀孕又失去孩子的痛苦。"
+      ],
+      "facts": {
+        "narrator_lost_a_real_pregnancy_after_betrayal": true,
+        "the_partner_is_restrained_on_the_bed": true,
+        "belly_growth_is_from_ascaris_worms": true,
+        "fetal_movement_is_worms_moving": true,
+        "there_is_no_human_fetus": true,
+        "partner_is_being_starved_and_fed_for_the_parasites": true,
+        "this_is_a_normal_wanted_pregnancy": false
+      },
+      "cast": [
+        {
+          "name": "我（叙述者）",
+          "sex": "女",
+          "who": "怀过孩子又因对方背叛失去；这局是她在报复"
+        },
+        {
+          "name": "爱人",
+          "sex": "男",
+          "who": "背叛叙述者的男人；被绑在床上喂蛔虫卵、肚子被虫体撑大的人。汤面用「ta」把性别藏了，汤底一路用「他」"
+        }
+      ],
+      "keys": [
+        {
+          "id": "not_baby",
+          "label": "肚里不是孩",
+          "expect": true,
+          "prompt": "隆起的肚子里没有人类胎儿。"
+        },
+        {
+          "id": "worms",
+          "label": "是蛔虫在动",
+          "expect": true,
+          "prompt": "所谓胎动是蛔虫在体内繁殖扭动。"
+        },
+        {
+          "id": "revenge",
+          "label": "因失子报复",
+          "expect": true,
+          "prompt": "叙述者曾因对方背叛而失去孩子，这是报复。"
+        },
+        {
+          "id": "bound",
+          "label": "爱人被绑着",
+          "expect": true,
+          "prompt": "对方被绑在床上，被迫给虫子提供养分。"
+        }
+      ],
+      "difficulty": "浅",
+      "soup": "黑汤"
+    },
+    {
+      "id": "ranch",
+      "title": "牧场",
+      "image": "images/ranch.png",
+      "surface": "妈妈去世了，留给我一个荒废已久的牧场。第二天牧场里不知道从哪来了一只鸡，第三天又多了一头牛，第四天又多了一只羊。接下来一个月多了很多动物。我终于明白怎么回事，于是做了一个疯狂的决定。结果第二天牧场里多出了一个年轻的人，看到她后我疯了。",
+      "bottom": "规律是：我第一天晚上吃下什么动物的肉，第二天牧场就出现该动物。这是妈妈留下的魔力牧场。我想复活妈妈，把她的骨灰吃了下去。第二天出现一个和我长得一模一样的女人。原来我是妈妈的复制人，她制造我是为了以另一种方式活下去。出现的女人是『原版妈妈』被规则召回的样子，证明我不是她的女儿，而是她的复制体。",
+      "metaphor_map": [
+        "动物出现是因为前一晚吃了对应的肉。",
+        "疯狂的决定是吃下妈妈的骨灰想复活她。",
+        "出现的年轻人是和叙述者一模一样的女人。",
+        "叙述者是妈妈的复制人，不是普通母女。"
+      ],
+      "facts": {
+        "ranch_is_magical": true,
+        "eating_meat_spawns_that_animal_next_day": true,
+        "narrator_ate_mothers_ashes": true,
+        "appearing_woman_looks_identical_to_narrator": true,
+        "narrator_is_mothers_clone": true,
+        "ordinary_animals_just_wandered_in": false
+      },
+      "cast": [
+        {
+          "name": "妈妈",
+          "sex": "女",
+          "who": "留下魔力牧场的人；已死，骨灰被「我」吃下后按规则被召回"
+        },
+        {
+          "name": "我",
+          "sex": "未写明",
+          "who": "妈妈的复制人；材料没写性别，只写不是她的女儿而是复制体"
+        },
+        {
+          "name": "出现的年轻女人",
+          "sex": "女",
+          "who": "被规则召回的「原版妈妈」的样子，和「我」长得一模一样"
+        }
+      ],
+      "keys": [
+        {
+          "id": "rule",
+          "label": "吃什么来什么",
+          "expect": true,
+          "prompt": "晚上吃下什么肉，第二天牧场出现该动物。"
+        },
+        {
+          "id": "ashes",
+          "label": "吃了骨灰",
+          "expect": true,
+          "prompt": "疯狂的决定是吃下妈妈的骨灰。"
+        },
+        {
+          "id": "clone",
+          "label": "我是复制人",
+          "expect": true,
+          "prompt": "叙述者是妈妈的复制人。"
+        }
+      ],
+      "difficulty": "浅",
+      "soup": "红汤"
+    },
+    {
+      "id": "big-brother",
+      "title": "被困的大哥",
+      "image": "images/big-brother.png",
+      "surface": "三兄弟和别人打架，大哥被关了起来。三弟手足无措，二哥叫来了一堆社会上的朋友救了大哥。然后又跟对面干起来了。后来对面的大哥来了，双方达成和解。",
+      "bottom": "这是《西游记》小雷音寺一难。三兄弟是孙悟空、猪八戒、沙僧。大哥悟空被黄眉大王扣在金铙里。沙僧手足无措，八戒上天请来二十八星宿；亢金龙钻出小孔，悟空才脱身。随后悟空又与黄眉大战。弥勒佛亲临，与悟空联手收了妖怪，危机才解，师徒重新上路。唐僧被捉是同一难里的事；汤面的『关起来』主要指金铙困住悟空。",
+      "metaphor_map": [
+        "不是当代江湖群架，是西游记典故。",
+        "大哥＝孙悟空，关起来＝金铙。",
+        "二哥＝猪八戒，社会朋友＝二十八星宿。",
+        "三弟＝沙僧。",
+        "对面大哥＝弥勒佛，和解＝收妖结束。"
+      ],
+      "facts": {
+        "story_is_journey_to_the_west": true,
+        "big_brother_is_sun_wukong_trapped_in_the_cymbals": true,
+        "second_brother_is_zhu_bajie": true,
+        "third_brother_is_sha_seng": true,
+        "social_friends_are_the_twenty_eight_mansions": true,
+        "opposing_boss_is_maitreya": true,
+        "this_is_a_modern_gang_fight": false
+      },
+      "cast": [
+        {
+          "name": "大哥",
+          "sex": "男",
+          "who": "孙悟空；被黄眉大王扣在金铙里"
+        },
+        {
+          "name": "二哥",
+          "sex": "男",
+          "who": "猪八戒；上天请来二十八星宿"
+        },
+        {
+          "name": "三弟",
+          "sex": "男",
+          "who": "沙僧；手足无措"
+        },
+        {
+          "name": "对面的大哥",
+          "sex": "男",
+          "who": "黄眉大王；最后弥勒佛亲临收了他"
+        }
+      ],
+      "keys": [
+        {
+          "id": "xiyou",
+          "label": "是西游记",
+          "expect": true,
+          "prompt": "故事是西游记小雷音寺一难，不是现代群架。"
+        },
+        {
+          "id": "cymbals",
+          "label": "大哥困金铙",
+          "expect": true,
+          "prompt": "被关的大哥是孙悟空，困在黄眉的金铙里。"
+        },
+        {
+          "id": "stars",
+          "label": "朋友是星宿",
+          "expect": true,
+          "prompt": "二哥叫来的社会朋友是二十八星宿。"
+        },
+        {
+          "id": "maitreya",
+          "label": "对面是弥勒",
+          "expect": true,
+          "prompt": "后来到场促成和解的对面大哥是弥勒佛。"
+        }
+      ],
+      "difficulty": "中",
+      "soup": "清汤"
+    },
+    {
+      "id": "peek",
+      "title": "偷窥",
+      "image": "images/peek.png",
+      "surface": "小区新来个女孩。我一直在偷窥她。可今天，她突然藏了起来，好像发现我了。她尖叫一声跑了回去。随后家里传来一声怒吼：要杀了你！",
+      "bottom": "女孩是男主人的情人。女主人出差这几日，男主人把她叫到家里。女主人提前回来，女孩赤身藏到窗帘后面。躲避时四下张望，看见了对楼上吊自杀的我的尸体，吓得尖叫跑回房间，被女主人发现。怒吼『要杀了你』是女主人对情人说的，不是对叙述者。叙述者那时已经死了，所谓偷窥，是尸体悬挂在窗外的视角。",
+      "metaphor_map": [
+        "叙述者已上吊，视角来自窗外的尸体。",
+        "女孩藏的是窗帘后，躲的是女主人，不是先发现偷窥者。",
+        "尖叫是因为看见了对楼的尸体。",
+        "『要杀了你』的对象是情人，不是『我』。"
+      ],
+      "facts": {
+        "narrator_has_already_hanged_himself": true,
+        "girl_is_the_husbands_mistress": true,
+        "wife_came_home_early": true,
+        "girl_hid_naked_behind_the_curtain": true,
+        "she_screamed_because_she_saw_the_hanging_corpse": true,
+        "the_death_threat_is_the_wife_to_the_mistress": true,
+        "the_girl_discovered_a_living_peeping_tom": false
+      },
+      "cast": [
+        {
+          "name": "我",
+          "sex": "未写明",
+          "who": "对楼住户；早已上吊自杀，所谓偷窥其实是尸体挂在窗外的视角；材料没写性别"
+        },
+        {
+          "name": "女孩",
+          "sex": "女",
+          "who": "男主人的情人；藏窗帘后时看见吊死的「我」而尖叫"
+        },
+        {
+          "name": "男主人",
+          "sex": "男",
+          "who": "趁女主人出差把情人叫到家里"
+        },
+        {
+          "name": "女主人",
+          "sex": "女",
+          "who": "提前回来；吼「要杀了你」的是她"
+        }
+      ],
+      "keys": [
+        {
+          "id": "hanged",
+          "label": "我已上吊",
+          "expect": true,
+          "prompt": "叙述者已经在对楼上吊，汤面是尸体的视角。"
+        },
+        {
+          "id": "curtain",
+          "label": "她藏窗帘后",
+          "expect": true,
+          "prompt": "女孩是躲女主人，赤身藏在窗帘后面。"
+        },
+        {
+          "id": "saw_corpse",
+          "label": "看见的是尸体",
+          "expect": true,
+          "prompt": "她尖叫是因为看见了上吊的叙述者，不是发现活人偷窥。"
+        },
+        {
+          "id": "kill_her",
+          "label": "要杀的是情人",
+          "expect": true,
+          "prompt": "怒吼要杀的是被发现的情人，不是叙述者。"
+        }
+      ],
+      "difficulty": "浅",
+      "soup": "红汤"
+    },
+    {
+      "id": "christmas",
+      "title": "圣诞礼物",
+      "image": "images/christmas.png",
+      "surface": "今天爸爸让我早点睡觉，可深夜我却听到了敲门声。我好奇推开门去看，是不是爸爸准备好了圣诞礼物。客厅里一颗红色的圣诞树上挂满了装饰品，还没填料的火鸡摆在餐桌上，绿色的圣诞老人藏在了壁炉里。这时门外又响起了敲门声……",
+      "bottom": "我是红绿色盲。平安夜爸爸骗妈妈说要加班，其实想在家准备圣诞礼物。妈妈信了，带了一个陌生叔叔回家。一直藏在家里的爸爸崩溃，杀死了叔叔，把人皮剥下来扔进壁炉；把妈妈的肚子掏空摆上餐桌，掏出的东西挂上圣诞树；随后自己在门外屋檐上吊自杀。风吹动爸爸的尸体，发出敲门声。因为色盲，壁炉里的人皮在我看来是『绿色的圣诞老人』，树上的东西是『装饰品』，掏空的身体是『没填料的火鸡』。",
+      "metaphor_map": [
+        "叙述者是红绿色盲，颜色判断不可信。",
+        "『没填料的火鸡』是被掏空的妈妈。",
+        "『树上的装饰品』是从妈妈身体里取出的东西。",
+        "『绿色圣诞老人在壁炉』是被剥下的叔叔的皮。",
+        "『敲门声』是屋檐上爸爸的尸体被风吹撞到门。",
+        "没有真正的圣诞老人送礼。"
+      ],
+      "facts": {
+        "narrator_is_red_green_colorblind": true,
+        "dad_pretended_to_work_late": true,
+        "mom_brought_another_man_home": true,
+        "dad_killed_the_uncle": true,
+        "skin_in_fireplace_looks_like_green_santa_to_narrator": true,
+        "turkey_is_moms_hollowed_body": true,
+        "tree_ornaments_are_removed_organs": true,
+        "knocking_is_dads_hanging_body_in_the_wind": true,
+        "dad_is_still_alive": false,
+        "real_santa_brought_gifts": false
+      },
+      "cast": [
+        {
+          "name": "我",
+          "sex": "未写明",
+          "who": "红绿色盲的孩子，看到的颜色都不可信；材料没写性别"
+        },
+        {
+          "name": "爸爸",
+          "sex": "男",
+          "who": "骗妈妈说要加班，其实回家准备礼物；杀死叔叔后在屋檐上吊"
+        },
+        {
+          "name": "妈妈",
+          "sex": "女",
+          "who": "带陌生叔叔回家；被爸爸掏空摆上餐桌"
+        },
+        {
+          "name": "陌生叔叔",
+          "sex": "男",
+          "who": "被爸爸杀死剥皮扔进壁炉；汤面里的「绿色圣诞老人」"
+        }
+      ],
+      "keys": [
+        {
+          "id": "colorblind",
+          "label": "红绿色盲",
+          "expect": true,
+          "prompt": "叙述者是红绿色盲，颜色不可信。"
+        },
+        {
+          "id": "turkey",
+          "label": "火鸡是妈妈",
+          "expect": true,
+          "prompt": "没填料的火鸡是被掏空的妈妈。"
+        },
+        {
+          "id": "skin",
+          "label": "壁炉里是人皮",
+          "expect": true,
+          "prompt": "绿色圣诞老人是被剥下的人皮。"
+        },
+        {
+          "id": "knock",
+          "label": "敲门是上吊",
+          "expect": true,
+          "prompt": "敲门声是屋檐上爸爸的尸体被风吹撞门。"
+        }
+      ],
+      "difficulty": "深",
+      "soup": "黑汤"
+    },
+    {
+      "id": "balloon",
+      "title": "气球",
+      "image": "images/balloon.png",
+      "surface": "天好黑啊。还好爸爸带了蜡烛。哥哥带了食物。妈妈最伟大，用气球救了我。",
+      "bottom": "一家四口露营遇上山体塌方，被困山洞，父母和哥哥当场死了。为了撑到救援，我把爸爸的脂肪做成尸蜡当蜡烛，靠哥哥的尸体充饥；又按书上写的巨人观，堵住妈妈每一个出气口。夏天腐败很快，妈妈像气球一样胀起来。听见地面有动静后，我捅破这具『气球』，声响引来救援。",
+      "metaphor_map": [
+        "天黑是困在塌方后的山洞。",
+        "蜡烛是用父亲脂肪做的尸蜡。",
+        "食物是哥哥的尸体。",
+        "气球是堵住气孔后膨胀的母亲尸体。",
+        "救了我＝捅破后引起地面救援注意。"
+      ],
+      "facts": {
+        "family_was_trapped_in_a_cave_after_a_landslide": true,
+        "father_mother_and_brother_died_immediately": true,
+        "candle_is_adipocere_from_the_father": true,
+        "food_is_the_brothers_body": true,
+        "balloon_is_the_mothers_bloated_corpse": true,
+        "puncturing_it_alerted_rescuers": true,
+        "this_was_an_ordinary_camping_night_with_real_balloons": false
+      },
+      "cast": [
+        {
+          "name": "爸爸",
+          "sex": "男",
+          "who": "塌方中当场死亡；脂肪被做成尸蜡当蜡烛"
+        },
+        {
+          "name": "哥哥",
+          "sex": "男",
+          "who": "当场死亡；尸体被当作食物"
+        },
+        {
+          "name": "妈妈",
+          "sex": "女",
+          "who": "当场死亡；堵住气孔后膨胀成「气球」，被捅破引来救援"
+        },
+        {
+          "name": "我",
+          "sex": "未写明",
+          "who": "活下来的孩子；材料没写性别"
+        }
+      ],
+      "keys": [
+        {
+          "id": "cave",
+          "label": "困在山洞里",
+          "expect": true,
+          "prompt": "不是夜里散步，是塌方后困在山洞。"
+        },
+        {
+          "id": "wax",
+          "label": "蜡烛是尸蜡",
+          "expect": true,
+          "prompt": "蜡烛是用父亲脂肪做成的尸蜡。"
+        },
+        {
+          "id": "food",
+          "label": "食物是哥哥",
+          "expect": true,
+          "prompt": "所谓食物是哥哥的尸体。"
+        },
+        {
+          "id": "bloat",
+          "label": "气球是妈妈",
+          "expect": true,
+          "prompt": "气球是巨人观下膨胀的母亲尸体，捅破后引来救援。"
+        }
+      ],
+      "difficulty": "中",
+      "soup": "黑汤"
+    },
+    {
+      "id": "santa",
+      "title": "圣诞老人",
+      "image": "images/santa.png",
+      "surface": "圣诞节到了。我又来完成孩子们的梦想了。第一个孩子想唱歌：他做到了。第二个孩子想去旅行：于是我送他环游世界，但他却被调走了。第三个孩子喜欢玩躲猫猫：于是我帮他藏起来，警官都找不到他，不过他明年自己就会出现了。",
+      "bottom": "我是肉联厂工人，有精神疾病，常年穿着血红色工作服，便把自己幻想成圣诞老人。第一个孩子是哑巴，被人嘲笑；我把他的皮做成鼓敲响，说那是他的歌声。第二个孩子想环球旅行却很穷；我在厂里把他搅碎做成罐头发往世界各地。第三个孩子爱躲猫猫；我把他做成雪人，警察找不到，等来年春天雪化，他就会出现——那是他躲得最久的一次。",
+      "metaphor_map": [
+        "圣诞老人是穿着血红工服的精神病肉联厂工人。",
+        "唱歌＝人皮鼓被敲响。",
+        "环游世界＝制成罐头出口到各国。",
+        "『被调走了』是罐头被运走。",
+        "躲猫猫＝做成雪人埋在雪里。",
+        "明年自己会出现＝春雪融化，尸体暴露。"
+      ],
+      "facts": {
+        "narrator_is_a_delusional_meat_plant_worker": true,
+        "red_suit_is_a_bloody_work_uniform": true,
+        "first_child_was_made_into_a_drum": true,
+        "second_child_was_canned_and_shipped": true,
+        "third_child_was_hidden_as_a_snowman": true,
+        "he_will_be_found_when_snow_melts": true,
+        "narrator_is_a_kind_real_santa": false,
+        "the_children_survived": false
+      },
+      "cast": [
+        {
+          "name": "我",
+          "sex": "未写明",
+          "who": "肉联厂工人，有精神疾病，把自己幻想成圣诞老人；材料没写性别"
+        },
+        {
+          "name": "第一个孩子",
+          "sex": "男",
+          "who": "哑巴，被嘲笑；皮被做成鼓"
+        },
+        {
+          "name": "第二个孩子",
+          "sex": "男",
+          "who": "想环球旅行；被搅碎做成罐头发往各地"
+        },
+        {
+          "name": "第三个孩子",
+          "sex": "男",
+          "who": "爱躲猫猫；被做成雪人，来年雪化就「出现」"
+        },
+        {
+          "name": "警官",
+          "sex": "未写明",
+          "who": "找不到躲起来的孩子；材料没写性别"
+        }
+      ],
+      "keys": [
+        {
+          "id": "worker",
+          "label": "是肉联厂工",
+          "expect": true,
+          "prompt": "叙述者是患精神病的肉联厂工人，不是真圣诞老人。"
+        },
+        {
+          "id": "drum",
+          "label": "唱歌是人皮鼓",
+          "expect": true,
+          "prompt": "第一个孩子被做成鼓敲响，那就是『唱歌』。"
+        },
+        {
+          "id": "cans",
+          "label": "旅行是罐头",
+          "expect": true,
+          "prompt": "环游世界是把人做成罐头发往各国。"
+        },
+        {
+          "id": "snowman",
+          "label": "躲猫猫是雪人",
+          "expect": true,
+          "prompt": "第三个孩子被做成雪人，雪化才会被发现。"
+        }
+      ],
+      "difficulty": "中",
+      "soup": "黑汤"
+    },
+    {
+      "id": "coffin-knock",
+      "title": "奇怪的声音",
+      "image": "images/coffin-knock.png",
+      "surface": "之前的支教走了，于是把我派去山里支教。我借宿在村长家里。门口贴了一张奇怪的黄纸，每天晚上都传来沉闷的咚咚声。我发现声音有规律，记了下来：96924482622454。三天后声音消失了，我也明白那是什么了，是那五个字……",
+      "bottom": "村长两个儿子意外死了，村子还留着给未婚死者办冥婚的恶习。他把先前城里来的女支教绑来，和大儿子的尸体一起封进棺材。她手脚被捆、嘴被堵，只能用头敲棺材求救，按手机九宫格敲出「我在棺材里」。三天后她死了，声音消失。村长接着把新来的我也和二儿子封进另一口棺材，好让两个儿子在那边不孤单。黄纸是镇棺/冥婚符。",
+      "metaphor_map": [
+        "咚咚声是上一任支教在棺材里用头敲门。",
+        "数字按九宫格拼音对应五个字：我在棺材里（96 924 4826 224 54）。",
+        "声音消失＝她死了，不再敲。",
+        "黄纸与借宿，是把外来人留下殉葬。",
+        "『之前的支教走了』是被关进去了，不是正常离任。"
+      ],
+      "facts": {
+        "previous_teacher_is_trapped_in_a_coffin": true,
+        "knocking_encodes_t9_pinyin": true,
+        "five_characters_are_wo_zai_guan_cai_li": true,
+        "village_practices_ghost_marriage": true,
+        "narrator_will_be_buried_with_the_second_son": true,
+        "yellow_paper_is_a_funeral_charm": true,
+        "the_previous_teacher_simply_finished_the_posting": false
+      },
+      "cast": [
+        {
+          "name": "我",
+          "sex": "未写明",
+          "who": "新派来的支教，被村长封进二儿子的棺材；材料没写性别"
+        },
+        {
+          "name": "先前的女支教",
+          "sex": "女",
+          "who": "被村长绑来与尸体冥婚封进棺材；用头敲棺敲出九宫格求救，三天后死了"
+        },
+        {
+          "name": "村长",
+          "sex": "男",
+          "who": "把支教绑来给两个儿子办冥婚"
+        },
+        {
+          "name": "村长的两个儿子",
+          "sex": "男",
+          "who": "意外死亡，被父亲用来办冥婚"
+        }
+      ],
+      "keys": [
+        {
+          "id": "coffin",
+          "label": "敲的是棺材",
+          "expect": true,
+          "prompt": "咚咚声是人被关在棺材里用头敲门。"
+        },
+        {
+          "id": "t9",
+          "label": "号码是九宫格",
+          "expect": true,
+          "prompt": "96924482622454 按九宫格拼音是『我在棺材里』五个字。"
+        },
+        {
+          "id": "ghost_wedding",
+          "label": "给死人冥婚",
+          "expect": true,
+          "prompt": "村长在给未婚死去的儿子办冥婚，拿支教殉葬。"
+        },
+        {
+          "id": "next",
+          "label": "我也会被关",
+          "expect": true,
+          "prompt": "声音消失后轮到新来的叙述者，会和二儿子一起被封进棺材。"
+        }
+      ],
+      "difficulty": "中",
+      "soup": "黑汤"
+    },
+    {
+      "id": "masterpiece",
+      "title": "最完美的作品",
+      "image": "images/masterpiece.png",
+      "surface": "我是一个落魄画家，妻子为了我的事业陪我去乡下写生。山路颠簸崎岖，车子突然坏了。这时路过一个牵马的牧民，将我们送到村子里借宿。晚上妻子说很热很渴想去喝水，却一直没有回来。我很担心，出去找她，看到她站在几口井中间，目光呆滞地跳进了其中一口井。我既害怕又兴奋，赶紧把这一幕画下来。",
+      "bottom": "我们在山路侧翻坠崖，车子爆炸，夫妻俩已在火里烧死，只是自己还不知道。牵马的牧民是引路人，身后跟着牛头马面。妻子先一步感到热渴，去喝的是孟婆汤；面目呆滞是因为喝了汤。那几口井是六道轮回，她跳进一口便去投胎。我这才明白这里是地狱。我害怕，但又狂喜：眼前这一幕将是我最完美的作品。",
+      "metaphor_map": [
+        "车子『坏了』是坠崖爆炸，两人当时已经死了。",
+        "牧民是阴间引路人，马是牛头马面那一路的。",
+        "村子是地狱/冥界，不是人间村落。",
+        "热和渴来自被火烧死。",
+        "喝水是喝孟婆汤。",
+        "井是六道，跳井是投胎。",
+        "兴奋是因为画家终于得到了完美题材。"
+      ],
+      "facts": {
+        "couple_died_in_a_car_crash_fire": true,
+        "they_did_not_know_they_were_dead_at_first": true,
+        "herdsman_is_a_psychopomp": true,
+        "village_is_the_underworld": true,
+        "thirst_and_heat_come_from_being_burned": true,
+        "water_is_meng_po_soup": true,
+        "wells_are_the_six_realms_of_rebirth": true,
+        "wife_reincarnates_by_jumping_into_a_well": true,
+        "ordinary_rural_sketching_trip": false
+      },
+      "cast": [
+        {
+          "name": "我",
+          "sex": "男",
+          "who": "落魄画家，有妻子；和妻子一起在车祸火里烧死而不自知"
+        },
+        {
+          "name": "妻子",
+          "sex": "女",
+          "who": "先感到热渴，喝的是孟婆汤；跳进井里投胎"
+        },
+        {
+          "name": "牧民",
+          "sex": "未写明",
+          "who": "牵马的引路人（身后跟着牛头马面那一类的接引者）；材料没写性别"
+        }
+      ],
+      "keys": [
+        {
+          "id": "already_dead",
+          "label": "车祸里已死",
+          "expect": true,
+          "prompt": "坠崖爆炸后夫妻已经死了，只是当时不知道。"
+        },
+        {
+          "id": "guide",
+          "label": "牧民是引路",
+          "expect": true,
+          "prompt": "牵马牧民是阴间引路人，不是热心村民。"
+        },
+        {
+          "id": "soup",
+          "label": "喝的孟婆汤",
+          "expect": true,
+          "prompt": "妻子去喝的不是井水，是孟婆汤。"
+        },
+        {
+          "id": "wells",
+          "label": "井是六道",
+          "expect": true,
+          "prompt": "几口井代表六道轮回，跳井是去投胎。"
+        }
+      ],
+      "difficulty": "深",
+      "soup": "红汤"
+    },
+    {
+      "id": "sister-room",
+      "title": "妹妹的房间",
+      "image": "images/sister-room.png",
+      "surface": "妹妹的房间传来很多球鞋摩擦地板的声音，房门虚掩着，我开门看了一眼，妹妹空洞的眼神正望着我，我急忙去叫保安，结果我死了。",
+      "bottom": "那天是妹妹的头七。我去坟前扫墓，却听到棺材里传来运动鞋摩擦的声音，觉得奇怪，便挖开坟墓。棺椁被人打开过，里面挤满老鼠，妹妹的尸体已被啃得面目全非。我吓得去叫保安。原来保安有恋尸癖，作案后没把棺材盖严，老鼠才钻了进去。他怕事情败露，把我也杀了。",
+      "metaphor_map": [
+        "『妹妹的房间』其实是坟墓/棺材内部，不是家里的卧室。",
+        "『球鞋摩擦地板』是棺材里老鼠跑动的声音。",
+        "『房门虚掩』是棺盖没盖严。",
+        "『空洞的眼神望着我』是被啃坏的尸体面孔，妹妹已经死了。",
+        "『保安』就是那个有恋尸癖、没盖好棺材的人，也是杀死叙述者的人。",
+        "问保安有没有猥亵/性侵/奸尸，都指向他对尸体的恋尸行为，答案为是。妹妹活着时并未被保安侵犯。"
+      ],
+      "facts": {
+        "scene_is_home_bedroom": false,
+        "scene_is_grave_and_coffin": true,
+        "sister_is_alive": false,
+        "sounds_are_rats_in_coffin": true,
+        "sounds_are_people_playing_in_room": false,
+        "coffin_lid_was_left_ajar": true,
+        "security_guard_is_necrophile": true,
+        "security_guard_killed_the_narrator": true,
+        "sister_killed_the_narrator": false,
+        "ghost_killed_the_narrator": false,
+        "security_guard_violated_the_corpse": true,
+        "sister_was_assaulted_while_alive": false
+      },
+      "cast": [
+        {
+          "name": "妹妹",
+          "sex": "女",
+          "who": "头七那天还在棺材里；尸体已被老鼠啃得面目全非"
+        },
+        {
+          "name": "我",
+          "sex": "未写明",
+          "who": "去坟前扫墓、挖开坟墓又叫保安的人；被保安杀死；材料没写性别"
+        },
+        {
+          "name": "保安",
+          "sex": "男",
+          "who": "恋尸癖；作案后没盖严棺盖，怕败露把「我」也杀了"
+        }
+      ],
+      "keys": [
+        {
+          "id": "sister_dead",
+          "label": "妹妹已死",
+          "expect": true,
+          "prompt": "妹妹已经死了，不是活人站在房间里。"
+        },
+        {
+          "id": "grave",
+          "label": "房间是坟墓",
+          "expect": true,
+          "prompt": "所谓妹妹的房间其实是坟墓/棺材内部。"
+        },
+        {
+          "id": "rats",
+          "label": "老鼠在跑",
+          "expect": true,
+          "prompt": "球鞋摩擦声其实是棺材里的老鼠。"
+        },
+        {
+          "id": "lid",
+          "label": "棺盖没盖严",
+          "expect": true,
+          "prompt": "房门虚掩其实是棺盖没盖严。"
+        },
+        {
+          "id": "necrophile",
+          "label": "保安恋尸",
+          "expect": true,
+          "prompt": "保安有恋尸癖，并对妹妹的尸体做了侵犯/奸尸一类的事。问猥亵、性侵、奸尸、恋尸都算指向这一点。"
+        },
+        {
+          "id": "killer",
+          "label": "保安杀了我",
+          "expect": true,
+          "prompt": "杀死叙述者的是保安，不是鬼、不是妹妹。"
+        }
+      ],
+      "difficulty": "深",
+      "soup": "黑汤"
+    },
+    {
+      "id": "siblings",
+      "title": "兄妹",
+      "image": "images/siblings.png",
+      "surface": "我家楼上住着一对兄妹，哥哥十分开朗，妹妹沉默寡言却是一个知名主播。我每天都会看她直播。我很喜欢她，终于有一天她注意到我了。我喊了四个字，现在她每天除了直播都会陪着我了。",
+      "bottom": "我潜入女主播家藏在床底偷窥。其实每天直播的是她双胞胎哥哥：他囚禁妹妹，并在生活和直播里扮演妹妹。妹妹挣扎时被哥哥失手杀死，头垂到床边，正好与床底的我对视。我吓得喊出『哎呀我去』四个字，被哥哥发现。他把我和妹妹一起埋了。所以『她每天除了直播都会陪着我』——我们埋在一起。",
+      "metaphor_map": [
+        "叙述者藏在床底下，不是普通邻居远观。",
+        "直播里的『妹妹』其实是哥哥在扮演。",
+        "真妹妹被囚禁，后来被失手杀死。",
+        "四个字是惊叫脏话，不是告白。",
+        "『每天陪着我』是两人被埋在一起。"
+      ],
+      "facts": {
+        "narrator_hides_under_the_bed": true,
+        "livestream_persona_is_actually_the_brother": true,
+        "sister_was_imprisoned": true,
+        "sister_was_killed_by_brother": true,
+        "four_words_were_a_frightened_swear": true,
+        "they_are_buried_together": true,
+        "she_became_narrators_girlfriend": false,
+        "upstairs_neighbor_story_is_literal": false
+      },
+      "cast": [
+        {
+          "name": "哥哥",
+          "sex": "男",
+          "who": "囚禁妹妹，在生活与直播里假扮妹妹；失手杀死妹妹后把「我」和妹妹一起埋了"
+        },
+        {
+          "name": "妹妹",
+          "sex": "女",
+          "who": "被囚禁的知名主播；挣扎时被哥哥失手杀死"
+        },
+        {
+          "name": "直播里的「妹妹」",
+          "sex": "男",
+          "who": "其实是双胞胎哥哥扮演的，不是妹妹本人"
+        },
+        {
+          "name": "我",
+          "sex": "未写明",
+          "who": "藏在床底偷窥的人；喊出四个字后被杀死；材料没写性别"
+        }
+      ],
+      "keys": [
+        {
+          "id": "under_bed",
+          "label": "人在床底",
+          "expect": true,
+          "prompt": "叙述者藏在床底下偷窥，不是普通邻居。"
+        },
+        {
+          "id": "brother_live",
+          "label": "直播是哥哥",
+          "expect": true,
+          "prompt": "每天直播的『妹妹』其实是哥哥在扮演。"
+        },
+        {
+          "id": "sister_dead",
+          "label": "妹妹被杀",
+          "expect": true,
+          "prompt": "真妹妹被哥哥囚禁后失手杀死。"
+        },
+        {
+          "id": "buried",
+          "label": "埋在一起",
+          "expect": true,
+          "prompt": "『每天陪着我』是两人被埋在一起。"
+        }
+      ],
+      "difficulty": "中",
+      "soup": "红汤"
+    },
+    {
+      "id": "masseur",
+      "title": "按摩师",
+      "image": "images/masseur.png",
+      "surface": "我是按摩师，今天来到约好的客户家里按摩。他很健谈，按摩时一直和我聊天，就是手不太老实，总是有意无意占我便宜。家里饭香四溢，应该快开饭了。浴室里有逐渐缩小的水流声，另一个房间传来「妈妈，妈妈」的孩童声，很阴森。第二天新闻说，他们一家三口全死了。",
+      "bottom": "我是盲人按摩师。这家人已被食人凶手杀死，凶手不知道我会来。发现我看不见后将计就计，让我给男主人的尸体按摩，自己假扮男主人聊天。刚死不久，尸体神经还会抽动，所以会碰到我。锅里炖的是孩子。浴室越来越小的水声，是他把女主人吊起来放血。童声来自鹦鹉。我在现场做完按摩，无意中成了凶手的不在场证明。",
+      "metaphor_map": [
+        "按摩师看不见，所以闻得到、听得到，看不到现场。",
+        "健谈的客户是凶手假扮死者。",
+        "手不老实是尸体抽动，不是调戏。",
+        "饭香是炖着的孩子。",
+        "水流变小是放血将尽。",
+        "妈妈妈妈是鹦鹉学舌。"
+      ],
+      "facts": {
+        "narrator_is_a_blind_masseur": true,
+        "the_family_was_already_murdered": true,
+        "masseur_was_working_on_the_husbands_corpse": true,
+        "killer_pretended_to_be_the_husband": true,
+        "wandering_hands_were_cadaveric_spasms": true,
+        "dinner_is_the_child_being_cooked": true,
+        "shrinking_water_is_the_wife_being_bled": true,
+        "child_voice_is_a_parrot": true,
+        "narrator_unknowingly_gave_an_alibi": true,
+        "narrator_can_see_the_room": false
+      },
+      "cast": [
+        {
+          "name": "我",
+          "sex": "未写明",
+          "who": "盲人按摩师；材料没写性别"
+        },
+        {
+          "name": "客户（男主人）",
+          "sex": "男",
+          "who": "已被食人凶手杀死；尸体被假扮他的凶手按着给按摩师按"
+        },
+        {
+          "name": "凶手",
+          "sex": "男",
+          "who": "杀死一家三口、假扮男主人聊天；按摩师无意中成了他的不在场证明"
+        },
+        {
+          "name": "女主人",
+          "sex": "女",
+          "who": "被吊起来放血，浴室的水声越来越小"
+        },
+        {
+          "name": "孩子",
+          "sex": "未写明",
+          "who": "被炖在锅里；材料没写性别（「妈妈，妈妈」的童声来自鹦鹉）"
+        },
+        {
+          "name": "鹦鹉",
+          "sex": "未写明",
+          "who": "学舌的鸟，不是人"
+        }
+      ],
+      "keys": [
+        {
+          "id": "blind",
+          "label": "我是盲人",
+          "expect": true,
+          "prompt": "按摩师是盲人，所以没看见现场。"
+        },
+        {
+          "id": "corpse",
+          "label": "按的是尸体",
+          "expect": true,
+          "prompt": "手上的人是已死的男主人，说话的是凶手。"
+        },
+        {
+          "id": "stew",
+          "label": "饭是孩子",
+          "expect": true,
+          "prompt": "饭香来自锅里炖着的孩子。"
+        },
+        {
+          "id": "bleed",
+          "label": "水声是放血",
+          "expect": true,
+          "prompt": "浴室水流变小是女主人被吊着放血。"
+        },
+        {
+          "id": "parrot",
+          "label": "童声是鹦鹉",
+          "expect": true,
+          "prompt": "喊妈妈的是鹦鹉，不是活着的小孩。"
+        }
+      ],
+      "difficulty": "深",
+      "soup": "黑汤"
+    },
+    {
+      "id": "mermaid",
+      "title": "美人鱼",
+      "image": "images/mermaid.png",
+      "surface": "小美人鱼生活在自己的宫殿里。有一天，人类的王子落入水中，被一条粉色的水蛇咬了。过了好久，宫殿里没有其他食物，她只好把水蛇和王子都吃掉了。可能是吃撑了，她的肚子越来越大，最后被撑死在水面上。水面上飘起了红色的水花。",
+      "bottom": "男人发现妻子出轨并怀了情夫的孩子，把妻子双腿缝在一起，丢进深蓄水池，看上去像一条不能再劈腿的人鱼。他又杀死情夫扔进去，拖出的肠子像粉色水蛇。池中没有食物，妻子吃了情夫的尸体。她本就怀着孩子，无法正常生产，最终难产死在水面，血把水染红。所谓宫殿是蓄水池，吃撑是误读，肚子变大是怀孕。",
+      "metaphor_map": [
+        "宫殿＝封闭的蓄水池。",
+        "美人鱼＝双腿被缝的妻子。",
+        "王子＝被扔进来的情夫。",
+        "粉色水蛇＝拖出体外的肠子。",
+        "肚子变大＝原本就怀着的孩子，不是吃撑。",
+        "红色水花＝难产的血。"
+      ],
+      "facts": {
+        "palace_is_a_cistern": true,
+        "mermaid_is_the_wife_with_legs_sewn": true,
+        "prince_is_the_lover_dumped_in": true,
+        "pink_snake_is_intestines": true,
+        "she_ate_the_lovers_corpse": true,
+        "belly_growth_is_pregnancy": true,
+        "she_died_in_childbirth": true,
+        "this_is_the_fairy_tale_little_mermaid": false
+      },
+      "cast": [
+        {
+          "name": "美人鱼（妻子）",
+          "sex": "女",
+          "who": "被丈夫把双腿缝在一起丢进蓄水池；本来就怀着孩子，最后难产死在水面"
+        },
+        {
+          "name": "王子（情夫）",
+          "sex": "男",
+          "who": "妻子的情夫；被丈夫杀死扔进池子，肠子像粉色水蛇"
+        },
+        {
+          "name": "丈夫",
+          "sex": "男",
+          "who": "发现妻子出轨怀了情夫的孩子，缝腿、杀情夫、把她丢进蓄水池"
+        }
+      ],
+      "keys": [
+        {
+          "id": "tank",
+          "label": "宫殿是水池",
+          "expect": true,
+          "prompt": "宫殿其实是很深的蓄水池。"
+        },
+        {
+          "id": "sewn",
+          "label": "腿被缝成人鱼",
+          "expect": true,
+          "prompt": "妻子双腿被缝在一起，看起来像人鱼。"
+        },
+        {
+          "id": "guts",
+          "label": "水蛇是肠子",
+          "expect": true,
+          "prompt": "粉色水蛇是情夫裸露的肠子。"
+        },
+        {
+          "id": "birth",
+          "label": "撑死是难产",
+          "expect": true,
+          "prompt": "肚子变大是怀孕，水面而死是难产，不是吃撑。"
+        }
+      ],
+      "difficulty": "中",
+      "soup": "黑汤"
+    },
+    {
+      "id": "secret",
+      "title": "秘密",
+      "image": "images/secret.png",
+      "surface": "我最近胃肠感冒，一夜没睡，无意中发现了哥哥和嫂子的秘密，我大惊失色，于是杀死了妻子。",
+      "bottom": "真正的叙述者是一个患胃肠感冒的男人。他有人格分裂：其中一个人格是食人者，他自己的『正常人格』并不知情。他的女友也是食人者。为了和他在一起，女友接近了那个食人人格，并谎称自己也有双重人格。胃肠感冒让他呕吐出人的指甲。他当晚假装切换成食人人格，发现了他们吃人的秘密，也发现女友在欺骗他，于是愤怒地杀死了女友。汤面里的『哥哥和嫂子』是他站在正常人格视角，对『食人人格 + 女友』那对组合的称呼；『妻子』就是女友。",
+      "metaphor_map": [
+        "发现秘密的『我』是男朋友的正常人格，不是女友。",
+        "『哥哥和嫂子』指他的食人人格和女友这对搭档。",
+        "『妻子』就是那位食人女友。",
+        "胃肠感冒导致吐出人的指甲，这才触发调查。",
+        "女友并没有双重人格，那是谎言。",
+        "杀人动机是食人秘密加欺骗，不是普通出轨。"
+      ],
+      "facts": {
+        "surface_narrator_is_the_boyfriend_normal_persona": true,
+        "girlfriend_is_cannibal": true,
+        "boyfriend_has_split_personality": true,
+        "cannibal_persona_exists": true,
+        "girlfriend_truly_has_DID": false,
+        "they_eat_people": true,
+        "vomit_contained_human_nail": true,
+        "killing_reason_is_affair_only": false,
+        "killing_reason_is_cannibalism_and_the_lie": true,
+        "the_wife_who_dies_is_the_girlfriend": true
+      },
+      "cast": [
+        {
+          "name": "我（男友）",
+          "sex": "男",
+          "who": "叙述者是患胃肠感冒的男人；有人格分裂，汤面的「我」是他的正常人格"
+        },
+        {
+          "name": "女友（妻子）",
+          "sex": "女",
+          "who": "食人者；谎称自己也有双重人格；被「我」杀死"
+        },
+        {
+          "name": "哥哥（汤面）",
+          "sex": "男",
+          "who": "汤面里的「哥哥」指他自己的食人人格那一面，是同一个人"
+        },
+        {
+          "name": "嫂子（汤面）",
+          "sex": "女",
+          "who": "汤面里的「嫂子」就是那位食人女友"
+        }
+      ],
+      "keys": [
+        {
+          "id": "who_narrates",
+          "label": "是男方在发现",
+          "expect": true,
+          "prompt": "发现秘密并动手的是男朋友的正常人格，不是女友。"
+        },
+        {
+          "id": "cannibal",
+          "label": "他们吃人",
+          "expect": true,
+          "prompt": "男友食人人格和女友都吃人。"
+        },
+        {
+          "id": "lie",
+          "label": "双重人格是谎",
+          "expect": true,
+          "prompt": "女友并没有双重人格，那是为了接近他编的谎。"
+        },
+        {
+          "id": "motive",
+          "label": "因欺骗而杀",
+          "expect": true,
+          "prompt": "杀人是因为吃人秘密加欺骗，不是普通出轨。"
+        }
+      ],
+      "difficulty": "深",
+      "soup": "黑汤"
+    },
+    {
+      "id": "candle",
+      "title": "吹蜡烛",
+      "image": "images/candle.png",
+      "surface": "家里闹鬼了，我找了一个大师帮我解决。大师说要想保命需要做到三点，过了今晚就会安然无恙。一、这根驱邪蜡烛千万不要吹灭，不然就会死。二、家里只有你一个人，任何人喊你的名字都不要回应，包括我。三、哪怕过了今晚，这辈子晚上都不要关灯，否则就会看到鬼。我平安度过了今天，却在几个月之后死了。",
+      "bottom": "方法本来有用。当晚我接了电话，鬼在那头叫了我的名字，我下意识应了一声，触犯第二条，中了幻觉。我以为自己熬过了那晚，此后夜里也不关灯。几个月后生日宴会上，白天我放松警惕，关灯吹蜡烛许愿。睁开眼，回到了闹鬼那一夜：关的是房间的灯，吹灭的是大师点燃的驱邪烛。他现在就在我面前。那几个月都是假象，真正的今晚从未结束。",
+      "metaphor_map": [
+        "致命破绽是接电话应了名字，不是蜡烛先灭。",
+        "『平安度过』是幻觉，时间没有真正往前走完那一夜。",
+        "生日吹蜡烛＝吹灭驱邪烛，关灯＝违反第三条。",
+        "几个月后死去，其实死在被规则反噬的那一晚。"
+      ],
+      "facts": {
+        "the_masters_three_rules_were_real": true,
+        "narrator_answered_a_phone_call_to_their_name": true,
+        "answering_broke_rule_two": true,
+        "the_following_months_were_a_hallucination": true,
+        "birthday_candles_were_the_exorcism_candle": true,
+        "turning_off_the_light_broke_rule_three": true,
+        "narrator_truly_survived_that_night": false
+      },
+      "cast": [
+        {
+          "name": "我",
+          "sex": "未写明",
+          "who": "闹鬼那晚接了电话、应了名字的人；几个月后关灯吹蜡烛时回到那一夜；材料没写性别"
+        },
+        {
+          "name": "大师",
+          "sex": "男",
+          "who": "给出三条保命规矩的人；最后「就在我面前」"
+        },
+        {
+          "name": "鬼",
+          "sex": "未写明",
+          "who": "在电话里叫「我」名字的那个；材料没写性别"
+        }
+      ],
+      "keys": [
+        {
+          "id": "answered",
+          "label": "电话里应了名",
+          "expect": true,
+          "prompt": "鬼在电话那头叫名字，叙述者应了一声，破了第二条。"
+        },
+        {
+          "id": "illusion",
+          "label": "那晚没过完",
+          "expect": true,
+          "prompt": "所谓平安过完今晚以及后面几个月，都是幻觉。"
+        },
+        {
+          "id": "birthday",
+          "label": "生日吹的是它",
+          "expect": true,
+          "prompt": "生日宴会上吹灭的是大师那根驱邪蜡烛，关的是不该关的灯。"
+        }
+      ],
+      "difficulty": "浅",
+      "soup": "红汤"
+    },
+    {
+      "id": "silent-night",
+      "title": "平安夜",
+      "image": "images/silent-night.png",
+      "surface": "我长年待在病房里。今天是平安夜，外面下了很大的雪。爸爸妈妈接我回家待一天，爸爸亲自下厨，妈妈也在照顾生病的我。护工来到家里，说我该回去了。妈妈恳求他但他不听，于是二人扭打在一起，妈妈杀了护工。爸爸让我不要在意，还给我做了火鸡和烤肉。吃饱了，我和爸爸妈妈睡在一张床上，很热，很暖，我很快睡着了。第二天我幸福地死了。",
+      "bottom": "我患有严重的精神分裂症。平安夜我跑到公园，护工在身后追我。保护性人格「妈妈」杀死了护工，从他身上翻到打火机。我又分裂出「爸爸」，在雪地里做出「烤肉」和「火鸡」：火鸡是护工的尸体，烤肉是我自己的胳膊。吃完后我躺在雪地里睡着，第二天冻死了。所谓回家、下厨、同一张床，都是幻觉；很热很暖，是失温前的错觉。",
+      "metaphor_map": [
+        "病房是长期住院的精神障碍治疗，不是普通感冒。",
+        "爸爸妈妈是分裂出的保护性人格，不是真实亲属来接。",
+        "『家里』其实是下雪的公园。",
+        "火鸡是护工的尸体，烤肉是叙述者自己的胳膊。",
+        "同一张床、很热很暖，是冻死前的失温幻觉。"
+      ],
+      "facts": {
+        "narrator_has_schizophrenia": true,
+        "parents_are_split_personalities": true,
+        "real_parents_took_the_narrator_home": false,
+        "setting_is_a_snowy_park_not_a_house": true,
+        "mom_killed_the_caregiver": true,
+        "turkey_is_the_caregivers_body": true,
+        "roast_is_narrators_own_arm": true,
+        "narrator_froze_to_death_in_the_snow": true,
+        "warmth_was_hypothermia": true
+      },
+      "cast": [
+        {
+          "name": "我",
+          "sex": "未写明",
+          "who": "患严重精神分裂症、长年住院的人；最后冻死在公园雪地里；材料没写性别"
+        },
+        {
+          "name": "妈妈（保护性人格）",
+          "sex": "女",
+          "who": "「我」分裂出的保护性人格；打斗中杀死了护工"
+        },
+        {
+          "name": "爸爸（人格）",
+          "sex": "男",
+          "who": "「我」分裂出的另一个人格；在雪地里「下厨」"
+        },
+        {
+          "name": "护工",
+          "sex": "男",
+          "who": "来追「我」回去的人；被「妈妈」杀死，尸体成了「火鸡」"
+        }
+      ],
+      "keys": [
+        {
+          "id": "split",
+          "label": "精神分裂",
+          "expect": true,
+          "prompt": "叙述者有严重精神分裂症，当晚的家庭是幻觉。"
+        },
+        {
+          "id": "personas",
+          "label": "爸妈是人格",
+          "expect": true,
+          "prompt": "爸爸妈妈是分裂出的保护性人格，不是真人来接。"
+        },
+        {
+          "id": "turkey",
+          "label": "火鸡是护工",
+          "expect": true,
+          "prompt": "所谓火鸡是被杀死的护工。"
+        },
+        {
+          "id": "arm",
+          "label": "烤肉是自己",
+          "expect": true,
+          "prompt": "烤肉是叙述者自己的胳膊。"
+        },
+        {
+          "id": "froze",
+          "label": "冻死在雪地",
+          "expect": true,
+          "prompt": "第二天的死是躺在公园雪地里冻死，不是在家安睡。"
+        }
+      ],
+      "difficulty": "深",
+      "soup": "黑汤"
+    },
+    {
+      "id": "farewell",
+      "title": "送别",
+      "image": "images/farewell.png",
+      "surface": "明天有一个重要的仪式，所以我睡得很早。午夜朦胧中听到一阵清脆的金属碰撞，又听到一前一后两个脚步声。早上醒来，我家门口围满了人，地上有五具尸体。查明真相后，我把他们送到了他们该去的地方。",
+      "bottom": "战争胜利后仍有敌军残部屠村。三名归途战士为护住小槐村百姓战死。有村民想把英骸送到半个月后都城的英雄告别仪式，但普通尸体撑不到那一千三百多公里。一对父子走出来：父亲摇铃，儿子用竹竿绑运。村民有些惧怕他们。父亲喊『生人回避』，连夜上路。金属声是铃铛，一前一后是父子的脚步。他们把三位战士送到了都城——叙述者所在之处、仪式的前夜。门口的五具尸体是三位战士加上力竭而死的父子。叙述者查明后，把五人都送去参加他们该参加的告别。",
+      "metaphor_map": [
+        "重要仪式是都城的英雄告别。",
+        "金属碰撞是父亲的铃铛。",
+        "一前一后两个脚步是运尸的父子。",
+        "五具尸体＝三名战士＋运他们而来的父子。",
+        "『该去的地方』是英雄告别仪式／安葬。"
+      ],
+      "facts": {
+        "three_soldiers_died_protecting_the_village": true,
+        "father_and_son_are_corpse_escorts": true,
+        "metal_sound_is_the_fathers_bell": true,
+        "two_footsteps_are_the_father_and_son": true,
+        "five_bodies_are_three_soldiers_plus_the_escorts": true,
+        "ceremony_is_a_heroes_farewell_in_the_capital": true,
+        "narrator_sends_them_to_the_rite_or_burial": true,
+        "the_five_were_ordinary_murder_victims_unrelated_to_war": false
+      },
+      "cast": [
+        {
+          "name": "父亲",
+          "sex": "男",
+          "who": "赶尸的父子里的父亲；摇铃、喊「生人回避」，力竭而死"
+        },
+        {
+          "name": "儿子",
+          "sex": "男",
+          "who": "用竹竿绑运尸体；和父亲一起把三名战士送到都城，力竭而死"
+        },
+        {
+          "name": "三名战士",
+          "sex": "未写明",
+          "who": "为护住小槐村百姓战死的归途士兵；材料没写各自的性别"
+        },
+        {
+          "name": "我",
+          "sex": "未写明",
+          "who": "都城这边的人；把五具尸体送去他们该去的告别仪式；材料没写性别"
+        }
+      ],
+      "keys": [
+        {
+          "id": "soldiers",
+          "label": "战士护村",
+          "expect": true,
+          "prompt": "三名战士为保护村庄战死。"
+        },
+        {
+          "id": "escorts",
+          "label": "父子送骸",
+          "expect": true,
+          "prompt": "金属声和脚步是运英骸的父子。"
+        },
+        {
+          "id": "five",
+          "label": "五具是谁",
+          "expect": true,
+          "prompt": "五具尸体是三名战士加上力竭的父子。"
+        },
+        {
+          "id": "rite",
+          "label": "送到仪式",
+          "expect": true,
+          "prompt": "该去的地方是都城的英雄告别。"
+        }
+      ],
+      "difficulty": "中",
+      "soup": "红汤"
+    },
+    {
+      "id": "dorm",
+      "title": "宿舍",
+      "image": "images/dorm.png",
+      "surface": "今天天气很热，老大在宿舍门口吃冰棍，老三刚吃完饭，在远处探头看着我们，封寝了，我准备睡觉了，朦胧中我听到老五一声惨叫……",
+      "bottom": "我是个登山客，正在挑战一座未被探索的雪山，山上有一个搭好的帐篷。我惊恐地发现帐篷外有两具自己的尸体：看起来更久的尸体被山巅掉下来的冰锥贯穿了喉咙，而另一具被陷在雪流沙里，只露出一个人头，他的嘴角有进食过的痕迹，看来应该是还有一个我被他吃掉了。吓得我拼命逃离雪山，却遇见了鬼打墙，我逃不出去了。这是一座没有人能活着出去的邪山！“我们”都被困死在这里了！不知多久，我失温冻死在了帐篷里，弥留之际，我听到了“老五”看到我们后发出的惨叫声，新的一轮开始了……",
+      "metaphor_map": [
+        "『宿舍』是雪山帐篷，不是学校宿舍。",
+        "『天气很热』是失温前的错觉，实际是极寒。",
+        "『老大在门口吃冰棍』是一具尸体被冰锥贯穿喉咙。",
+        "『老三刚吃完饭、远处探头』是陷在雪流沙里只露出头、嘴角有进食痕迹的那具尸体。",
+        "『封寝』是被困山中出不去。",
+        "『老五惨叫』是新来的登山者看到这幕。",
+        "老大、我、老三、被吃掉的那个、老五，都是同一人的不同轮回。"
+      ],
+      "facts": {
+        "scene_is_school_dorm": false,
+        "scene_is_cursed_snow_mountain": true,
+        "roommates_are_other_people": false,
+        "all_numbered_people_are_versions_of_narrator": true,
+        "eldest_eating_popsicle_is_ice_spike_through_throat": true,
+        "third_peeking_is_head_in_snow": true,
+        "cannibalism_happened_among_versions": true,
+        "narrator_dies_of_hypothermia_in_tent": true,
+        "mountain_lets_people_leave": false,
+        "cycle_restarts_when_a_newcomer_arrives": true
+      },
+      "cast": [
+        {
+          "name": "我",
+          "sex": "男",
+          "who": "挑战雪山的登山客；帐篷外那两具尸体都是「自己」（汤底用「他」称其中一具）"
+        },
+        {
+          "name": "老大、老三、老五等",
+          "sex": "男",
+          "who": "宿舍这套称呼是同一个人的不同版本（冰锥穿喉、陷雪流沙、在帐篷里冻死）"
+        }
+      ],
+      "keys": [
+        {
+          "id": "not_dorm",
+          "label": "不是宿舍",
+          "expect": true,
+          "prompt": "场景不是学校宿舍，而是雪山帐篷。"
+        },
+        {
+          "id": "same_person",
+          "label": "都是我",
+          "expect": true,
+          "prompt": "老大老三老五等都是同一人的不同轮回/版本。"
+        },
+        {
+          "id": "ice",
+          "label": "冰锥穿喉",
+          "expect": true,
+          "prompt": "门口吃冰棍其实是冰锥贯穿喉咙。"
+        },
+        {
+          "id": "snow_head",
+          "label": "雪里探头",
+          "expect": true,
+          "prompt": "远处探头是陷在雪流沙里只露出头的尸体。"
+        },
+        {
+          "id": "loop",
+          "label": "邪山循环",
+          "expect": true,
+          "prompt": "出不去，新来的人会开始下一轮。"
+        }
+      ],
+      "difficulty": "深",
+      "soup": "黑汤"
+    },
+    {
+      "id": "village",
+      "title": "村庄",
+      "image": "images/village.png",
+      "surface": "男孩第一次去女朋友家拜访，村子里都用异样的眼光看着他。他在女友家住了一夜。第二天早上醒来，女朋友的父亲居然死了，而男孩则成了女友的老公。",
+      "bottom": "这村子有秘术：把年老者的大脑换进年轻人的身体以永葆青春。这对夫妇已活上千年。妻子刚换进年轻女孩的身体，老公也需要更换。她与我交往，骗我进村，把老公说成是她父亲。当晚给我做了换脑手术，老公占用了我的身体。村里人的异样眼光，是一群千年老东西在打量年轻躯体。所谓父亲死了，是旧身体被弃；我成了她老公，是因为脑子已经不是我的了。",
+      "metaphor_map": [
+        "女友是换了年轻身体的千年妻子。",
+        "父亲是她真正的老公的旧身体。",
+        "异样眼光是对可替换躯体的渴望。",
+        "一夜之后身份对调，是因为大脑被换走。"
+      ],
+      "facts": {
+        "village_performs_brain_swaps_for_immortality": true,
+        "girlfriend_is_an_ancient_wife_in_a_new_body": true,
+        "the_father_is_actually_her_husband": true,
+        "narrators_body_was_taken_overnight": true,
+        "villagers_want_young_bodies": true,
+        "this_is_an_ordinary_rural_marriage_custom_without_surgery": false
+      },
+      "cast": [
+        {
+          "name": "男孩（我）",
+          "sex": "男",
+          "who": "第一次去女朋友家拜访；当晚被换脑，身体被女友真正的老公占用"
+        },
+        {
+          "name": "女朋友",
+          "sex": "女",
+          "who": "换了年轻身体的千年妻子；骗「我」进村"
+        },
+        {
+          "name": "父亲",
+          "sex": "男",
+          "who": "她真正老公的旧身体；被弃后成了「死掉」的父亲"
+        }
+      ],
+      "keys": [
+        {
+          "id": "swap",
+          "label": "秘术是换脑",
+          "expect": true,
+          "prompt": "村子用换脑让老人占用年轻人的身体。"
+        },
+        {
+          "id": "wife",
+          "label": "女友是妻子",
+          "expect": true,
+          "prompt": "女朋友是刚换了年轻身体的千年妻子。"
+        },
+        {
+          "id": "husband",
+          "label": "父亲是她老公",
+          "expect": true,
+          "prompt": "所谓父亲其实是她真正的老公。"
+        },
+        {
+          "id": "stolen",
+          "label": "身体被占用",
+          "expect": true,
+          "prompt": "一夜之后男孩成为老公，是因为脑子被换走、身体被占用。"
+        }
+      ],
+      "difficulty": "浅",
+      "soup": "黑汤"
+    },
+    {
+      "id": "sister-secret",
+      "title": "妹妹的秘密",
+      "image": "images/sister-secret.png",
+      "surface": "只有妹妹陪我过十岁生日。妈妈还在躺着，不过她胖了许多。爸爸一脸惊恐地看着爸爸。妹妹摸着我的脸说：等你成年了就要娶我哦。",
+      "bottom": "「妹妹」是患侏儒症的成年女人，伪装成八九岁孩子，被一对夫妇收养。她爱上了与自己同龄的「爸爸」。趁爸爸出差，她把「妈妈」淹死在浴缸里，尸体泡胀，所以看起来胖了。爸爸发现秘密想报仇，她用鱼线机关割下他的头。『爸爸看着爸爸』是头颅与身体相对。她对爸爸之死伤心，于是把主意打到「哥哥」身上：等男孩成年，长得像爸爸，就可以替代。",
+      "metaphor_map": [
+        "妹妹不是儿童，是侏儒症的成年人。",
+        "妈妈躺着且变胖＝浴缸里淹死泡胀的尸体。",
+        "两个爸爸＝被割下的头和身体。",
+        "十岁生日的『我』是被收养家庭里真正的小孩。",
+        "要娶我＝等男孩长成亡父的替代品。"
+      ],
+      "facts": {
+        "sister_is_an_adult_with_dwarfism": true,
+        "she_is_not_a_biological_child": true,
+        "mom_was_drowned_in_the_bathtub": true,
+        "bloating_makes_mom_look_fatter": true,
+        "dad_was_decapitated_by_a_wire_trap": true,
+        "two_dads_are_head_and_body": true,
+        "she_plans_to_use_the_boy_as_a_substitute_when_he_grows_up": true,
+        "this_is_a_normal_child_birthday": false
+      },
+      "cast": [
+        {
+          "name": "妹妹",
+          "sex": "女",
+          "who": "患侏儒症的成年女人，伪装成八九岁孩子被收养；爱上同龄的「爸爸」"
+        },
+        {
+          "name": "爸爸",
+          "sex": "男",
+          "who": "被妹妹用鱼线机关割下头；头和身体相对，所以汤面是「爸爸看着爸爸」"
+        },
+        {
+          "name": "妈妈",
+          "sex": "女",
+          "who": "被妹妹淹死在浴缸里，泡胀了所以看起来胖了"
+        },
+        {
+          "name": "我（男孩）",
+          "sex": "男",
+          "who": "过十岁生日的男孩；妹妹打算等他成年、长得像爸爸时拿来替代"
+        }
+      ],
+      "keys": [
+        {
+          "id": "adult",
+          "label": "妹妹是成年",
+          "expect": true,
+          "prompt": "妹妹是侏儒症的成年人伪装成小孩。"
+        },
+        {
+          "id": "drown",
+          "label": "妈妈被淹死",
+          "expect": true,
+          "prompt": "妈妈被淹死在浴缸里，泡胀所以看起来胖了。"
+        },
+        {
+          "id": "head",
+          "label": "爸爸被割头",
+          "expect": true,
+          "prompt": "两个爸爸是被鱼线割下的头和身体相对。"
+        },
+        {
+          "id": "replace",
+          "label": "等我像爸爸",
+          "expect": true,
+          "prompt": "她想等男孩成年长得像爸爸之后取而代之。"
+        }
+      ],
+      "difficulty": "中",
+      "soup": "黑汤"
+    },
+    {
+      "id": "planchette",
+      "title": "笔仙",
+      "image": "images/planchette.png",
+      "surface": "笔仙笔仙，你是我的前世我是你的今生，如要与我续缘请再纸上画圈。忧郁的男人问：『她是不是不爱我了？』笔落在『是』上，他松了口气。华贵的老妇人问：『我是不是真的永远不会变老了？』『是』，她放心地笑。美丽的少妇问：『是不是有人知道我的秘密了？』『是』，她紧张起来。笔又自己写下：你们知道，我是谁吗？",
+      "bottom": "三人是一家人：出轨的丈夫、出轨并堕胎的妻子、吃了胎儿的丈母娘。妻子的秘密是与情人怀孕后打掉孩子。丈夫也跟同一人出轨；情人有了妻子这个新欢，所以疏远丈夫。丈夫生气，杀死了情人。丈母娘听信吃婴儿能永葆青春，偷走还有一口气的胎儿吃掉。笔仙就是那个孩子。它回答老妇人『不会变老』，是因为它准备杀死这几个最亲的恶人——死人当然不再变老。男人松口气，是因为『她不爱我了』让他确认情人为何疏远。",
+      "metaphor_map": [
+        "三个人是丈夫、妻子、丈母娘。",
+        "笔仙是被打掉后又被吃掉的孩子。",
+        "妻子的秘密是出轨堕胎。",
+        "丈夫也出轨同一人，并杀了情人。",
+        "丈母娘吃了胎儿。",
+        "『永远不会变老』等于即将被杀死。"
+      ],
+      "facts": {
+        "three_people_are_one_family": true,
+        "planchette_spirit_is_the_dead_child": true,
+        "wife_had_an_affair_and_abortion": true,
+        "husband_had_an_affair_with_the_same_person": true,
+        "mother_in_law_ate_the_fetus": true,
+        "husband_killed_the_lover": true,
+        "spirit_plans_to_kill_them": true,
+        "old_woman_will_stay_young_by_magic": false
+      },
+      "cast": [
+        {
+          "name": "忧郁的男人",
+          "sex": "男",
+          "who": "出轨的丈夫；跟同一个人出轨；最后杀死了情人"
+        },
+        {
+          "name": "美丽的少妇",
+          "sex": "女",
+          "who": "出轨并堕胎的妻子；秘密就是与情人怀孕后打掉孩子"
+        },
+        {
+          "name": "老妇人",
+          "sex": "女",
+          "who": "吃了胎儿的丈母娘；听信吃婴儿能永葆青春"
+        },
+        {
+          "name": "笔仙",
+          "sex": "未写明",
+          "who": "就是那个被吃掉的胎儿；材料没写性别"
+        },
+        {
+          "name": "情人",
+          "sex": "未写明",
+          "who": "男人和妻子共同出轨的对象；被男人杀死；材料没写性别"
+        }
+      ],
+      "keys": [
+        {
+          "id": "family",
+          "label": "一家三口",
+          "expect": true,
+          "prompt": "三个人是丈夫、妻子、丈母娘。"
+        },
+        {
+          "id": "child_spirit",
+          "label": "笔仙是孩子",
+          "expect": true,
+          "prompt": "笔仙是被打掉后又被吃掉的孩子。"
+        },
+        {
+          "id": "crimes",
+          "label": "各有罪行",
+          "expect": true,
+          "prompt": "妻子出轨堕胎、丈夫杀情人、丈母娘吃了胎儿。"
+        },
+        {
+          "id": "revenge",
+          "label": "笔仙要复仇",
+          "expect": true,
+          "prompt": "『不会变老』是因为笔仙准备杀死他们。"
+        }
+      ],
+      "difficulty": "中",
+      "soup": "黑汤"
+    },
+    {
+      "id": "wardrobe",
+      "title": "柜中的孩子",
+      "image": "images/wardrobe.png",
+      "surface": "深夜衣柜传来窸窣声。我打开柜门，里面有一个孩子，笑着说『妈妈，你找到我啦』。我让他离开，他哭着叫我妈妈。他和我前夫有几分相似。可我几年前流产后失去生育能力，也离了婚。他说还有一个双胞胎弟弟，甚至叫出了我和前夫的名字，哭着问：你真不记得我了吗？",
+      "bottom": "八年前地球轨迹偏移，平行世界交错。一个孕妇腹中的胎儿偏移到同位体腹中：这边误以为流产、家庭破碎；那边以为生了双胞胎、家庭美满。八年后世界被强制重新平行。另一边弟弟的日记写着：捉迷藏后哥哥消失，所有人都不记得哥哥，全家福也没了哥哥，他被当成臆想症。柜子里的孩子就是被校正回来、寻找母亲的那个『哥哥』。",
+      "metaphor_map": [
+        "孩子是平行世界交错时从叙述者腹中偏移走的亲生儿子。",
+        "所谓流产是偏移，不是胚胎停止发育那么简单。",
+        "另一世界把这个孩子当成双胞胎之一。",
+        "世界正在被校正，所以孩子出现在这边的衣柜。",
+        "弟弟还在另一边，被当成病人。"
+      ],
+      "facts": {
+        "child_in_wardrobe_is_real": true,
+        "parallel_worlds_exist": true,
+        "miscarriage_was_a_fetus_shifting_worlds": true,
+        "other_world_thought_there_were_twins": true,
+        "worlds_are_being_forced_parallel_again": true,
+        "child_is_a_random_stranger": false,
+        "narrator_is_the_childs_biological_mother": true
+      },
+      "cast": [
+        {
+          "name": "我",
+          "sex": "女",
+          "who": "叙述者；这孩子是她亲生的（平行世界交错时从她腹中偏移走），她以为自己当年是流产"
+        },
+        {
+          "name": "柜中的孩子",
+          "sex": "男",
+          "who": "另一个世界当成双胞胎哥哥的那个孩子，被校正回来找母亲；和「我」前夫有几分相似"
+        },
+        {
+          "name": "前夫",
+          "sex": "男",
+          "who": "因为「流产」那件事离了婚"
+        },
+        {
+          "name": "双胞胎弟弟",
+          "sex": "男",
+          "who": "还在另一个世界，被当成臆想症"
+        }
+      ],
+      "keys": [
+        {
+          "id": "real",
+          "label": "孩子是真的",
+          "expect": true,
+          "prompt": "柜中的孩子不是幻觉。"
+        },
+        {
+          "id": "shift",
+          "label": "平行世界偏移",
+          "expect": true,
+          "prompt": "八年前平行世界交错，胎儿偏移到另一边。"
+        },
+        {
+          "id": "not_miscarry",
+          "label": "不是普通流产",
+          "expect": true,
+          "prompt": "所谓流产其实是胎儿被偏移走了。"
+        },
+        {
+          "id": "mother",
+          "label": "我是他妈妈",
+          "expect": true,
+          "prompt": "叙述者是这个孩子的生母。"
+        }
+      ],
+      "difficulty": "中",
+      "soup": "清汤"
+    },
+    {
+      "id": "five-sons",
+      "title": "五兄弟",
+      "image": "images/five-sons.png",
+      "surface": "废弃教堂里刚发生惨案。高老爷子的尸体平静躺在棺椁里。他的五个儿子死在巨大的祭坛上，每人都被工整地切去一部分：老大缺头，老二缺胸和手，老三缺腹，老四缺大腿，老五缺小腿。高家独苗、老三的儿子也在现场，害怕地对警官说：他们本来想复活爷爷，结果召唤出恶魔，恶魔把他们全杀了。",
+      "bottom": "高老大得知老爷子绝症将死，要独吞遗产。他先杀掉老三的儿子，自己扮成这个独苗向警方作证；又在老爷子死后杀掉其余兄弟。现场只有四具兄弟尸体，被切割后平移拼接，摆成五具残尸，制造『五兄弟包括他自己都死了』的假象。老五缺的小腿其实在老四身上；老四真正缺的是腹以下，接到老三身上；老三缺的胸以下接到老二身上；所以老二只剩自己的头，身子被拿去假扮无头的老大。所谓召唤恶魔是编的。",
+      "metaphor_map": [
+        "没有恶魔，是遗产谋杀。",
+        "现场证人『孙子』其实是高老大。",
+        "真孙子已被杀。",
+        "五具残尸是四具平移出来的。",
+        "老爷子是病死在棺里，不是被恶魔所杀。"
+      ],
+      "facts": {
+        "no_demon_was_summoned": true,
+        "motive_is_inheritance": true,
+        "eldest_son_is_alive": true,
+        "witness_grandson_is_actually_the_eldest": true,
+        "real_grandson_was_killed": true,
+        "four_corpses_were_shifted_to_look_like_five": true,
+        "brothers_tried_to_resurrect_the_grandfather": false
+      },
+      "cast": [
+        {
+          "name": "高老爷子",
+          "sex": "男",
+          "who": "绝症病死，平静躺在棺椁里"
+        },
+        {
+          "name": "高老大",
+          "sex": "男",
+          "who": "杀死老三的儿子并假扮成这个「独苗孙子」向警方作证；五个兄弟里唯一活着的"
+        },
+        {
+          "name": "其余四个兄弟",
+          "sex": "男",
+          "who": "被高老大杀死；四具尸体被平移拼接，摆成五具残尸"
+        },
+        {
+          "name": "老三的儿子（孙子）",
+          "sex": "男",
+          "who": "真的独苗孙子，被高老大杀死"
+        },
+        {
+          "name": "警官",
+          "sex": "未写明",
+          "who": "来查案的警官；材料没写性别"
+        }
+      ],
+      "keys": [
+        {
+          "id": "no_demon",
+          "label": "没有恶魔",
+          "expect": true,
+          "prompt": "复活爷爷、召唤恶魔是编给警察的谎。"
+        },
+        {
+          "id": "heir",
+          "label": "为了抢遗产",
+          "expect": true,
+          "prompt": "动机是高老大要独吞遗产。"
+        },
+        {
+          "id": "shift",
+          "label": "四具平移成五",
+          "expect": true,
+          "prompt": "四具尸体切割平移，摆成五兄弟都死的假象。"
+        },
+        {
+          "id": "witness",
+          "label": "证人是老大",
+          "expect": true,
+          "prompt": "现场那个独苗其实是高老大，真孙子已被他杀掉。"
+        }
+      ],
+      "difficulty": "中",
+      "soup": "黑汤"
+    },
+    {
+      "id": "letter",
+      "title": "信",
+      "image": "images/letter.png",
+      "surface": "2000年我出生了，爷爷是我唯一的亲人，他告诉我以后会见到我的父母。2009年爷爷被一个蒙面人杀死，临死前给我一封信，让我27岁生日当天打开，之后我被收养。2023年我怀孕了，医生说我的身体有些特殊，男友随后消失。2024年我刚生完孩子，孩子就被偷走。2027年我出了车祸做了手术，术后又见到消失四年的男友。生日那天打开爷爷的信，我终于知道父母是谁了。",
+      "bottom": "我是双性人，人生会不受控制地穿越，信上的亲人都是不同时间的我自己。27岁车祸后手术让我外观变成男性，镜子里的『男友』就是术后的自己。第一次穿越回2023，必须和女性的我恋爱，好让『我』诞生；她一怀孕我就被送走。第二次回到2009，蒙面杀死『爷爷』（其实是中年的我），好让幼年的我被领养。我一直活到2024，42岁的自己已有爷爷的模样，把刚出生的我偷走。第三次穿越回2000，抚养这个婴儿。我知道2009年会被蒙面的自己杀死，死前把身世信交到幼年的我手里。父母、爷爷、男友、孩子，都是闭环里的自己。",
+      "metaphor_map": [
+        "所有关键人物都是不同年龄/性别阶段的叙述者。",
+        "男友是27岁术后变成男性的自己。",
+        "爷爷是把婴儿带回2000年抚养的自己。",
+        "蒙面杀手是穿越回2009的自己。",
+        "被偷走的孩子也是自己。",
+        "『身体特殊』是双性人。",
+        "信的内容是时间闭环与必须完成的节点。"
+      ],
+      "facts": {
+        "time_travel_exists": true,
+        "narrator_is_intersex": true,
+        "boyfriend_is_future_male_self": true,
+        "grandpa_is_future_self": true,
+        "masked_killer_is_self": true,
+        "stolen_baby_is_self": true,
+        "parents_are_self": true,
+        "letter_explains_the_time_loop": true,
+        "other_independent_family_members_exist": false
+      },
+      "cast": [
+        {
+          "name": "我",
+          "sex": "双性人（出生为女；27 岁车祸手术后外观变成男性）",
+          "who": "时间闭环里的父母、爷爷、男友、孩子都是不同年龄/性别的自己"
+        },
+        {
+          "name": "男友",
+          "sex": "男",
+          "who": "就是 27 岁手术后的「我」自己"
+        },
+        {
+          "name": "爷爷",
+          "sex": "男",
+          "who": "把婴儿带回 2000 年抚养的、未来的「我」"
+        },
+        {
+          "name": "蒙面人",
+          "sex": "未写明",
+          "who": "2009 年杀死「爷爷」的人，也是穿越回去的「我」自己；材料没写这一趟以什么面目出现"
+        },
+        {
+          "name": "被偷走的孩子",
+          "sex": "未写明",
+          "who": "2024 年被偷走的孩子，也是「我」自己；材料没写性别"
+        }
+      ],
+      "keys": [
+        {
+          "id": "timeloop",
+          "label": "会穿越",
+          "expect": true,
+          "prompt": "存在不受控制的时间穿越。"
+        },
+        {
+          "id": "all_self",
+          "label": "亲人都是自己",
+          "expect": true,
+          "prompt": "爷爷、男友、孩子、蒙面人、父母都是不同阶段的自己。"
+        },
+        {
+          "id": "intersex",
+          "label": "双性人",
+          "expect": true,
+          "prompt": "身体特殊是双性人。"
+        },
+        {
+          "id": "must_loop",
+          "label": "必须闭环",
+          "expect": true,
+          "prompt": "必须完成时间闭环，否则所有的自己消失。"
+        }
+      ],
+      "difficulty": "深",
+      "soup": "红汤"
+    },
+    {
+      "id": "asylum",
+      "title": "疯人院",
+      "image": "images/asylum.png",
+      "surface": "童谣：疯人院，院疯人，不收老人和病人，专收小孩和女人。白天大门排满人，夜里院里都是人，没有一个是活人。",
+      "bottom": "童谣里的「疯人院」不是「疯狂」的疯，是「风干」的风 —— 传唱的孩童念岔了。真实的故事是一座风干人肉的院子：院子里挂满风干的人肉。老人又老又难嚼，病人浑身是病会吃出问题，都不收；只收鲜嫩的女人和小孩，他们最可口，这家「腊肉」远近闻名。白天大门口排满前来用餐的人，夜里院里挂满新宰好的货 —— 都是抓来的，不认识，下手放心。这院子里，当然没有一个活人。",
+      "metaphor_map": [
+        "「疯人院」是「风干人肉的院子」被孩童念岔后的讹传。",
+        "「不收老人和病人」是按口感挑：老而难嚼、有病会吃出问题。",
+        "「白天大门排满人」是上门吃人肉的食客。",
+        "「夜里院里都是人」是挂满的新鲜尸体，不是住着人。"
+      ],
+      "facts": {
+        "the_nursery_rhyme_means_a_courtyard_where_human_meat_is_dried": true,
+        "the_meat_hanging_in_the_yard_is_human": true,
+        "people_at_the_gate_in_daytime_are_customers": true,
+        "the_people_hung_at_night_were_killed_and_butchered": true,
+        "anyone_is_still_alive_in_the_yard": false,
+        "feng_in_the_rhyme_means_crazy": false
+      },
+      "cast": [
+        {
+          "name": "院里挂着的人",
+          "sex": "女与小孩",
+          "who": "被宰杀风干的货 —— 童谣明说不收老人和病人，专收小孩和女人"
+        },
+        {
+          "name": "来买肉的人",
+          "sex": "未写明",
+          "who": "白天排满大门前来的客人；材料没写性别"
+        }
+      ],
+      "keys": [
+        {
+          "id": "punned",
+          "label": "风干非疯狂",
+          "expect": true,
+          "prompt": "「疯人院」其实是「风干人肉的院子」的讹传。"
+        },
+        {
+          "id": "cured_meat",
+          "label": "挂的是人肉",
+          "expect": true,
+          "prompt": "院子里挂着风干的人肉，这家「腊肉」远近闻名。"
+        },
+        {
+          "id": "diners",
+          "label": "白天来的是食客",
+          "expect": true,
+          "prompt": "白天大门口排满的人，是来吃人肉的食客。"
+        }
+      ],
+      "difficulty": "浅",
+      "soup": "黑汤"
+    },
+    {
+      "id": "mosquito",
+      "title": "蚊子",
+      "image": "images/mosquito.png",
+      "surface": "我吃饱饭就死了，全身都是血。",
+      "bottom": "其实我是一只蚊子。「吃饱饭」是吸饱了血，「全身都是血」是那一巴掌拍下来的结果 —— 吸得太饱飞不动，被人拍死在墙上。",
+      "metaphor_map": [
+        "叙述者不是人，是一只蚊子。",
+        "「吃饱饭」是吸饱了血。",
+        "「全身都是血」是自己被拍死时溅出来的血。"
+      ],
+      "facts": {
+        "the_narrator_is_a_mosquito": true,
+        "the_meal_was_blood": true,
+        "it_was_killed_by_a_swat": true,
+        "the_narrator_is_a_human": false
+      },
+      "cast": [
+        {
+          "name": "我",
+          "sex": "未写明",
+          "who": "叙述者其实是一只蚊子（不是人），被一巴掌拍死；材料没写性别"
+        }
+      ],
+      "keys": [
+        {
+          "id": "not_human",
+          "label": "不是人",
+          "expect": true,
+          "prompt": "叙述者不是人，是一只蚊子。"
+        },
+        {
+          "id": "meal_is_blood",
+          "label": "饭是血",
+          "expect": true,
+          "prompt": "「吃饱饭」指的是吸饱了人血。"
+        },
+        {
+          "id": "swatted",
+          "label": "被拍死",
+          "expect": true,
+          "prompt": "它是吸饱血飞不动，被人一巴掌拍死在墙上。"
+        }
+      ],
+      "difficulty": "浅",
+      "soup": "清汤"
+    },
+    {
+      "id": "brother-command",
+      "title": "哥哥的指令",
+      "image": "images/brother-command.png",
+      "surface": "「哥哥说向前就是向后，向左就是向右。『向前向前向前』—— 听不到哥哥的声音了，我知道我也活不长了……」",
+      "bottom": "我是一个盲人，脖子上还长着哥哥的脑袋 —— 我们共用一具身体。从小我就靠哥哥的口令生活。可这副模样让哥哥心理崩溃了。那天他对我下令「一直向前」，我照着走，其实是后退，他撞死在尖锐的东西上，结束了自己痛苦的一生。没有哥哥的指挥，我没有自理的能力，所以我知道，自己也活不长了。",
+      "metaphor_map": [
+        "「向前就是向后」是因为哥哥的脸朝后，他的方向与我的相反。",
+        "哥哥的脑袋长在叙述者脖子后面，两人共用一具身体。",
+        "哥哥的「向前」让共用身体的两个人一起后退。",
+        "哥哥借这次指令自杀，撞死的是两人共用的那具身体。"
+      ],
+      "facts": {
+        "the_narrator_is_blind": true,
+        "the_brother_is_a_second_head_on_the_same_body": true,
+        "they_share_one_body": true,
+        "the_brother_used_the_order_to_kill_himself": true,
+        "the_brother_died_on_a_sharp_object": true,
+        "the_narrator_can_survive_alone": false,
+        "the_two_are_separate_people_with_separate_bodies": false
+      },
+      "cast": [
+        {
+          "name": "我",
+          "sex": "未写明",
+          "who": "盲人；脖子上长着哥哥的脑袋，两人共用一具身体；材料没写性别"
+        },
+        {
+          "name": "哥哥",
+          "sex": "男",
+          "who": "长在叙述者脖子后的第二个脑袋；下令「一直向前」其实是后退，撞死在尖锐物上"
+        }
+      ],
+      "keys": [
+        {
+          "id": "two_heads",
+          "label": "两个头一身",
+          "expect": true,
+          "prompt": "哥哥的脑袋长在叙述者的脖子后面，两人共用一具身体。"
+        },
+        {
+          "id": "blind",
+          "label": "叙述者是盲人",
+          "expect": true,
+          "prompt": "叙述者看不见，一直靠哥哥的口令行动。"
+        },
+        {
+          "id": "suicide",
+          "label": "借身体自杀",
+          "expect": true,
+          "prompt": "哥哥故意下令让身体后退，撞死在尖锐物上，是自杀。"
+        }
+      ],
+      "difficulty": "浅",
+      "soup": "红汤"
+    },
+    {
+      "id": "diary",
+      "title": "日记",
+      "image": "images/diary.png",
+      "surface": "8岁，生日这天爸爸妈妈送我了一辆玩具车，好开心！\n9岁，生日爸爸带我们吃大餐，弟弟在厕所摔倒了，我和爸爸在旁边哈哈大笑。\n10岁，妈妈去世了……爸爸生死未卜，我没心情过生日。\n12岁，爸爸送我一条边境牧羊犬，说它是最聪明的狗。我叫它小乖。\n13岁，爸爸教我学习。他是作家，但他写的书不让我看。\n14岁，小乖食欲不振。爸爸说是换了狗粮，过几天就好。\n15岁，爸爸的书很畅销，还得了奖。生日他亲自下厨，很美味。可我听到做菜的声音会头疼。\n16岁，爸爸给我梳头，摸着我的脸，说我越来越像妈妈了。\n17岁，看完那本书，我明白弟弟为什么给我看了。对不起弟弟，我爱爸爸。记得爸爸说弟弟怕烫，我把开水烫在他身上，看着他绝望的眼神，我笑了。",
+      "bottom": "10岁那年，出狱的亲生父亲找到我们，当着我的面杀死了妈妈，我因此失忆。和我生活在一起的「爸爸」并不是我的亲生父亲——妈妈当年和他出轨，带着我离开了原来的家。\n11岁，爸爸因为我长得像妈妈，把我改造成女孩、重塑了我的记忆。他把弟弟的皮肤烫烂、贴上狗皮，做成狗皮人「小乖」。小乖食欲不振，是因为爸爸把我父母尸体做的狗粮喂给弟弟吃。他把自己的犯罪经过写成小说，得了奖；怕我想起来，一直不让我看。\n17岁，弟弟趁他不在把书叼给我，我恢复了记忆。可这些年相处下来，我已患上斯德哥尔摩综合征，极度依赖爸爸，没有复仇。为了让弟弟放弃复仇的念头，我狠狠地惩罚了他。",
+      "metaphor_map": [
+        "「小乖」不是狗，是被烫烂皮肤、贴上狗皮做成的弟弟。",
+        "狗粮是爸爸用父母的尸体做的。",
+        "「爸爸」是妈妈的出轨对象，不是亲生父亲。",
+        "「越来越像妈妈」是因为爸爸把叙述者按妈妈的样子改造成了女孩。",
+        "听到做菜的声音会头疼，是创伤记忆在抵触。",
+        "那本不让看的畅销书，写的就是爸爸自己的犯罪经过。",
+        "17岁的「我爱爸爸」不是亲情，是斯德哥尔摩综合征。"
+      ],
+      "facts": {
+        "the_man_called_dad_is_not_the_biological_father": true,
+        "the_biological_father_killed_the_mother": true,
+        "the_narrator_was_surgically_altered_into_a_girl": true,
+        "the_narrators_memory_was_rewritten": true,
+        "the_dog_xiaoguai_is_actually_the_younger_brother": true,
+        "the_dog_food_was_made_from_corpses": true,
+        "the_award_winning_novel_describes_the_fathers_crimes": true,
+        "the_narrator_regained_memory_at_seventeen": true,
+        "the_narrator_has_stockholm_syndrome": true,
+        "the_narrator_harmed_her_brother_in_the_end": true,
+        "the_family_was_always_ordinary_and_happy": false,
+        "xiaoguai_is_a_real_dog": false
+      },
+      "cast": [
+        {
+          "name": "我",
+          "sex": "出生时是男孩，11 岁起被养父手术改造成女孩（两个阶段都算，问性别要落「是也不是」）",
+          "who": "叙述者；8 岁起写日记，失忆后被养父重塑记忆，患上斯德哥尔摩综合征"
+        },
+        {
+          "name": "爸爸（养父）",
+          "sex": "男",
+          "who": "不是亲生父亲；杀死妈妈、把弟弟做成狗皮人「小乖」、把「我」改造成女孩；作家"
+        },
+        {
+          "name": "妈妈",
+          "sex": "女",
+          "who": "10 岁那年被出狱的亲生父亲当面杀死"
+        },
+        {
+          "name": "弟弟",
+          "sex": "男",
+          "who": "被养父烫烂皮肤、贴上狗皮，做成狗「小乖」"
+        },
+        {
+          "name": "亲生父亲",
+          "sex": "男",
+          "who": "出狱后找到他们，当着「我」的面杀死了妈妈"
+        }
+      ],
+      "keys": [
+        {
+          "id": "dog_is_brother",
+          "label": "小乖是弟弟",
+          "expect": true,
+          "prompt": "「小乖」不是狗，是被贴上狗皮做成的弟弟。"
+        },
+        {
+          "id": "dogfood",
+          "label": "狗粮是尸体",
+          "expect": true,
+          "prompt": "弟弟吃的狗粮，是爸爸用父母的尸体做的。"
+        },
+        {
+          "id": "transformed",
+          "label": "我被改造过",
+          "expect": true,
+          "prompt": "叙述者被爸爸改造成女孩并重塑了记忆。"
+        },
+        {
+          "id": "stockholm",
+          "label": "斯德哥尔摩",
+          "expect": true,
+          "prompt": "叙述者患上斯德哥尔摩综合征，依赖爸爸、放弃复仇。"
+        }
+      ],
+      "difficulty": "深",
+      "soup": "黑汤"
+    },
+    {
+      "id": "entropy",
+      "title": "熵增",
+      "image": "images/entropy.png",
+      "surface": "36、39、42、25、1000、25、15。",
+      "bottom": "这一串数字是温度。36度是人体正常体温；39、42度，是这个人开始生病、发烧；25度，是他人死后尸体的温度；1000度，是他被火化时的炉温；25度，是骨灰冷却后的温度；15度，是骨灰下葬后地下土层的温度。",
+      "metaphor_map": [
+        "数字不是年龄、不是日期，是一串温度。",
+        "1000 度是火化炉的炉温。",
+        "两次 25 度：一次是尸冷，一次是骨灰冷却。",
+        "15 度是骨灰入土后地下的温度。"
+      ],
+      "facts": {
+        "the_numbers_are_temperatures": true,
+        "one_thousand_degrees_is_cremation": true,
+        "twenty_five_degrees_marks_death_then_cooling_ash": true,
+        "fifteen_degrees_is_the_ground_after_burial": true,
+        "the_numbers_are_ages": false,
+        "the_numbers_are_dates": false
+      },
+      "cast": [
+        {
+          "name": "这串数字记录的那个人",
+          "sex": "未写明",
+          "who": "数字是他从活着、发烧、死亡、火化到下葬的温度；材料没写他是谁、性别"
+        }
+      ],
+      "keys": [
+        {
+          "id": "temp",
+          "label": "数字是温度",
+          "expect": true,
+          "prompt": "这一串数字表示的是温度。"
+        },
+        {
+          "id": "cremate",
+          "label": "1000度是火化",
+          "expect": true,
+          "prompt": "1000 度是这个人被火化的炉温。"
+        },
+        {
+          "id": "buried",
+          "label": "15度是下葬",
+          "expect": true,
+          "prompt": "最后那个 15 度是骨灰下葬后地下土层的温度。"
+        }
+      ],
+      "difficulty": "浅",
+      "soup": "红汤"
+    },
+    {
+      "id": "old-farmer",
+      "title": "老农",
+      "image": "images/old-farmer.png",
+      "surface": "万历年间，乡下一老农，其女貌美，为村霸所觊，屡来相扰。未几，女竟失踪。老农揣女或遇不测，遂往衙诉之。不意至衙，殒命焉。\n（大意为：万历年间，乡下有个老农，他的女儿长得貌美，被当地的村霸盯上了。村霸多次上门骚扰老农一家。没过多久，老农的女儿竟然失踪了。老农猜测女儿可能遭遇了不测，于是就到县衙去告状。谁料想到达衙门后，老农自己反而殒命了。）",
+      "bottom": "万历四年，有一老农，其女貌美，为村霸所觊。村霸屡来相扰，过了一段时间，女儿竟然失踪。老农揣测女儿遭村霸玷辱杀害，便去县衙告状。击鼓鸣冤时，他看见鼓面上竟有女儿的胎记 —— 官匪勾结，女儿是被残忍杀害后做成了人皮鼓。老农感到绝望，一头撞死在县衙的大门上。",
+      "metaphor_map": [
+        "鸣冤的那面鼓，鼓面是女儿的皮。",
+        "胎记是父女之间相认的凭据，也是真相的入口。",
+        "村霸敢在县衙做下这桩事，是因为官匪勾结。",
+        "老农不是被人杀死，是自己撞死在衙门大门上。"
+      ],
+      "facts": {
+        "the_drum_skin_is_made_from_the_daughter": true,
+        "the_daughter_was_murdered": true,
+        "officials_colluded_with_the_village_bully": true,
+        "the_farmer_died_by_his_own_hand": true,
+        "the_birthmark_on_the_drum_belonged_to_the_daughter": true,
+        "the_daughter_ran_away": false,
+        "the_farmer_was_killed_by_someone_else": false
+      },
+      "cast": [
+        {
+          "name": "老农",
+          "sex": "男",
+          "who": "女儿失踪后去县衙告状，看见鼓面上的胎记后撞死在大门上"
+        },
+        {
+          "name": "女儿",
+          "sex": "女",
+          "who": "貌美；被村霸杀害，皮被做成了县衙那面鼓"
+        },
+        {
+          "name": "村霸",
+          "sex": "未写明",
+          "who": "觊觎老农的女儿、屡来相扰，与官府勾结；材料没写性别"
+        },
+        {
+          "name": "县衙的人",
+          "sex": "未写明",
+          "who": "与村霸勾结的官；材料没写具体是谁、性别"
+        }
+      ],
+      "keys": [
+        {
+          "id": "drum",
+          "label": "鼓是女儿的皮",
+          "expect": true,
+          "prompt": "县衙那面鼓的鼓面，是女儿的皮做的，胎记就是证据。"
+        },
+        {
+          "id": "collusion",
+          "label": "官匪勾结",
+          "expect": true,
+          "prompt": "村霸与官府勾结，女儿是被害死后做人皮鼓。"
+        },
+        {
+          "id": "suicide",
+          "label": "老农自尽",
+          "expect": true,
+          "prompt": "老农绝望之下，一头撞死在县衙大门上。"
+        }
+      ],
+      "difficulty": "浅",
+      "soup": "黑汤"
+    },
+    {
+      "id": "floor-16",
+      "title": "16层公寓",
+      "image": "images/floor-16.png",
+      "surface": "我是一个高空清洁工。我正在擦 16 层窗户的时候，发现一对情侣正躺在床上接吻。我只能看到男人的背影，但是女人特别漂亮，于是我绅士地先去清理别的楼层。等我再回来的时候，发现他们俩居然还在亲吻。于是我去把所有其他楼层都擦完了，可等我回到 16 层的时候，却发现床上只剩下一个上半身的男人。",
+      "bottom": "那对「情侣」其实是连体人 —— 女人的上半身和她哥哥的上半身连在一起。因为模样怪异，没人喜欢他们，久而久之，这对兄妹打破了禁忌相爱了。后来女人认识了一个男人，他并不在意女人是残疾人，于是女人变了心，想摆脱哥哥，永远和这个男人在一起。两人设了一个局：女人和哥哥亲吻时，男人趁哥哥不备把他掐死。怕被清洁工发现，男人便假装成哥哥，继续和女人亲吻在一起。之后男人把女人和哥哥分离开，带着女人双宿双飞。清洁工回来看到的，就是只剩下半截身子的哥哥。",
+      "metaphor_map": [
+        "床上「接吻的两个人」其实是一对上半身连在一起的兄妹。",
+        "「男人的背影」之所以一直不动，是男人在冒充被掐死的哥哥。",
+        "清理其它楼层的那段空档，正好是杀人、分体、换人的时间。",
+        "床上剩下的半截身子是哥哥 —— 女人那半被带走了。"
+      ],
+      "facts": {
+        "the_pair_seen_are_conjoined_siblings": true,
+        "the_siblings_became_lovers": true,
+        "the_brother_was_strangled": true,
+        "the_man_impersonated_the_brother_to_avoid_discovery": true,
+        "the_woman_left_with_the_man": true,
+        "what_remained_is_the_brothers_upper_body": true,
+        "the_pair_were_an_ordinary_couple": false,
+        "the_brother_is_still_alive": false
+      },
+      "cast": [
+        {
+          "name": "女人",
+          "sex": "女",
+          "who": "上半身和哥哥连在一起的连体人；与哥哥相爱后变心，跟另一个男人走了"
+        },
+        {
+          "name": "哥哥",
+          "sex": "男",
+          "who": "连体兄妹里的哥哥；被那个男人掐死，最后床上只剩他的上半身"
+        },
+        {
+          "name": "那个男人",
+          "sex": "男",
+          "who": "不在乎女人是残疾人、想和她在一起；掐死哥哥后假扮成哥哥继续「接吻」"
+        },
+        {
+          "name": "我",
+          "sex": "未写明",
+          "who": "高空清洁工；材料没写性别"
+        }
+      ],
+      "keys": [
+        {
+          "id": "conjoined",
+          "label": "连体兄妹",
+          "expect": true,
+          "prompt": "床上那「两个人」是一对上半身连在一起的兄妹。"
+        },
+        {
+          "id": "killed",
+          "label": "哥哥被掐死",
+          "expect": true,
+          "prompt": "男人趁哥哥不备，把他掐死了。"
+        },
+        {
+          "id": "impersonate",
+          "label": "男人冒充哥哥",
+          "expect": true,
+          "prompt": "清洁工后来看到的「还在亲吻」，是男人假扮成哥哥。"
+        }
+      ],
+      "difficulty": "浅",
+      "soup": "红汤"
+    },
+    {
+      "id": "swordsman",
+      "title": "侠客",
+      "image": "images/swordsman.png",
+      "surface": "吾乃建邺一侠客，正在剿灭邪教，不知怎的来到这妖异之地，定是教头的琴音所致。这街上跑得飞快的四轮之物是什么？哦？竟有几人对吾不敬，说吾闯什么灯，定是邪教之人，吾剑气寒光，将几人斩杀。这时来了几个蓝衣壮汉将吾围住，像当差的，吾不愿与官府结仇，溜之大吉，却未曾想轻功失效，被擒到了这异地的县衙。几个年轻人来看吾，哭着叫吾爸爸。可笑，吾也不比他们大几岁。可照镜子那一刻吾呆住了，吾怎苍老这般？当差的把吾带去问诊，可吾清楚吾没有病。你们能帮帮吾吗？",
+      "bottom": "吾本是建邺侠客，斩尽邪教三百余教徒，只剩教头一人。她轻抚魔琴，琴音诡秘，吾咬破舌尖稳住心神，一剑斩落她的头。再睁眼，吾已身处异地：四周是诡异高耸的通天建筑，霓虹绚烂。莫不是教头的诡术？行人围住吾说些听不懂的鬼话，打扮怪异，吾手起刀落将几人斩杀；又来了几个似官府之人，吾欲踏轻功逃离，却内力尽失，被擒入这异地衙门。\n不多时，几个年轻人来看吾，苦涩地说：「爸，你咋自己跑出来了？」「警察叔叔不好意思，我爸爸有阿尔兹海默症。」一个女子拿出镜子：「爸！你怎么又幻想自己是大侠，你看看这才是你！」吾看着镜中苍老的自己，一段记忆涌入：吾有两个儿子一个女儿，妻子走得早，一直住在孝顺的二儿子家，年底就要抱孙子，没成想得了老年痴呆，老给孩子们添麻烦。小女儿在客厅拨弄古筝——那音律，竟有些熟悉。\n吾怡然地闭上了眼睛。偶尔看古装剧吾也会幻想：会不会那个侠客梦才是真的？",
+      "metaphor_map": [
+        "「妖异之地」就是现代城市，「通天建筑」是高楼，「四轮之物」是汽车。",
+        "「闯什么灯」是闯红灯 —— 说明这里真的有交通规则，是现实世界。",
+        "被斩杀的「邪教之人」是无辜的路人，「当差的」是警察。",
+        "「轻功失效、内力尽失」是老年痴呆让身体不听使唤。",
+        "「教头的魔琴」其实是小女儿在客厅拨弄的古筝。",
+        "所谓的侠客一生，是老人患病后的幻想。"
+      ],
+      "facts": {
+        "the_narrator_is_an_elderly_man_with_alzheimers": true,
+        "the_swordsman_identity_is_a_delusion": true,
+        "the_people_he_killed_were_ordinary_pedestrians": true,
+        "the_strange_place_is_a_modern_city": true,
+        "the_qin_music_was_his_daughters_guzheng": true,
+        "he_has_children_and_grandchildren": true,
+        "he_really_is_a_martial_artist_from_the_past": false,
+        "the_evil_cult_was_real": false,
+        "he_actually_has_no_illness": false
+      },
+      "cast": [
+        {
+          "name": "我",
+          "sex": "男",
+          "who": "患阿尔兹海默症的老人，幻想自己是建邺侠客；有儿有女、住在二儿子家"
+        },
+        {
+          "name": "小女儿",
+          "sex": "女",
+          "who": "在客厅拨弄古筝；那音律成了汤面里的「教头的琴音」"
+        },
+        {
+          "name": "两个儿子",
+          "sex": "男",
+          "who": "来警局接他回家；叫他「爸」"
+        }
+      ],
+      "keys": [
+        {
+          "id": "dementia",
+          "label": "老年痴呆",
+          "expect": true,
+          "prompt": "叙述者不是侠客，是一位患阿尔兹海默症的老人。"
+        },
+        {
+          "id": "pedestrians",
+          "label": "杀的是路人",
+          "expect": true,
+          "prompt": "他斩杀的「邪教之人」是无辜的路人，「当差的」是警察。"
+        },
+        {
+          "id": "guzheng",
+          "label": "古筝即琴音",
+          "expect": true,
+          "prompt": "他记忆里教头的魔琴，其实是小女儿在弹古筝。"
+        }
+      ],
+      "difficulty": "中",
+      "soup": "红汤"
+    },
+    {
+      "id": "blindfold",
+      "title": "蒙眼猜物",
+      "image": "images/blindfold.png",
+      "surface": "我醒过来，发现自己被困在床上，眼睛也被蒙住了。身旁传来声音：「别挣扎，我们来玩蒙眼猜物，你都猜对了我就放过你。」\n第一次，我摸到了一双手，我知道，妻子已经遇害了。\n第二次，我摸到了一块布条，我清楚地知道它是从哪拿的，我崩溃了。\n第三次开始之前我听到了脚步声，这次的物品很好猜，但我摸出来后，却不想活了。",
+      "bottom": "我不清楚情况，但为了求生，只能配合他。\n第一次，我摸到的是一双小手 —— 那是我还未出世的孩子的。他们剖开了妻子的肚子，把胎儿取了出来。我知道妻儿已经遇害了。\n第二次，我摸到的布条，是从我脸上解下来的。我这才发觉：即使布条拿下来，我还是看不见 —— 他们已经把我弄瞎了。\n第三次，我摸到了一个熟悉的人，那居然是我自己！我居然和这个人互换了身体！\n原来这个变态是个医生，一直给有钱人做换脑手术，延续他们的生命。那个瞎子是位老富豪，他将用我这具新躯体安排一个新的身份；而我现在，只是一个风烛残年的老人。",
+      "metaphor_map": [
+        "「一双小手」不是妻子的手，是还没出世的、被从腹中取出的孩子。",
+        "布条是从自己眼睛上解下来的 —— 摘下它仍看不见，因为眼睛已经被弄瞎。",
+        "第三次摸到的「熟悉的人」是自己的躯体：脑已经被换走了。",
+        "旁白者是个做换脑手术的医生，客户是买躯体的有钱人。"
+      ],
+      "facts": {
+        "the_first_item_was_the_unborn_child": true,
+        "the_wife_was_killed_and_cut_open": true,
+        "the_second_item_was_his_own_blindfold": true,
+        "he_was_deliberately_blinded": true,
+        "the_third_item_was_his_own_body_under_anothers_mind": true,
+        "a_brain_swap_was_performed": true,
+        "the_captor_is_a_doctor_serving_wealthy_clients": true,
+        "the_narrator_ends_up_in_an_old_body": true,
+        "the_first_item_was_the_wifes_hands": false
+      },
+      "cast": [
+        {
+          "name": "我",
+          "sex": "男",
+          "who": "有妻子；被换脑，最后困在一具老人的身体里"
+        },
+        {
+          "name": "妻子",
+          "sex": "女",
+          "who": "被剖开肚子，取出了还没出世的孩子"
+        },
+        {
+          "name": "还没出世的孩子",
+          "sex": "未写明",
+          "who": "被从妻子肚子里取出来，第一次蒙眼猜物摸到的就是那双小手"
+        },
+        {
+          "name": "医生",
+          "sex": "未写明",
+          "who": "一直给有钱人做换脑手术的变态；材料没写性别"
+        },
+        {
+          "name": "老富豪（瞎子）",
+          "sex": "男",
+          "who": "用「我」这具新躯体安排新身份；「我」则落进他那具风烛残年的身体"
+        }
+      ],
+      "keys": [
+        {
+          "id": "fetus",
+          "label": "第一件是胎儿",
+          "expect": true,
+          "prompt": "第一次摸到的「一双手」是尚未出世的胎儿。"
+        },
+        {
+          "id": "blinded",
+          "label": "布条=被弄瞎",
+          "expect": true,
+          "prompt": "布条是从自己脸上解下来的，摘下后仍看不见，说明已被弄瞎。"
+        },
+        {
+          "id": "swap",
+          "label": "换了脑",
+          "expect": true,
+          "prompt": "第三次摸到的是自己的躯体，他和老富豪换了脑。"
+        }
+      ],
+      "difficulty": "浅",
+      "soup": "黑汤"
+    },
+    {
+      "id": "zhang-li",
+      "title": "张三李四",
+      "image": "images/zhang-li.png",
+      "surface": "「一定要杀死张三」这几个字，某天凭空出现在了我家的天花板上。我赶紧把字擦掉，可第二天这句话又凭空出现了。我并不认识张三，但等我明白这几个字是哪来的以后，我开始寻找他了。\n大概过了 10 年，时间来到 2010 年，我终于找到了张三，并一刀杀死了他。他临死前不可置信地看着我：「李四？！」\n可能是被我触碰的原因，他的尸体异常地消失了。\n在我临死前的一个月，我终于知道为什么一定要杀死张三了。我放下手中新世纪的第一份报纸，去做了那件早就该做过的事。",
+      "bottom": "我叫李四，是一个时空逆行者 —— 我和全世界逆向：今天是 2 月 14 日，过了 0 点，我将会来到 2 月 13 日。\n2020 年，10 岁的我发现天花板上凭空出现一句话：「一定要杀死张三。」擦掉，第二天又出现。我意识到这是「未来」的我在「过去」留给自己的。2010 年，20 岁的我找到张三，他一脸不可置信。杀死他之后，他的尸体因为被我触碰而消失了。\n到了 2000 年，30 岁的我在新年的第一份报纸上看到：我在一个月之前被张三残忍杀害。这一刻我才明白那句话的意义 —— 为自己报仇。于是我在天花板上写下：「一定要杀死张三！」\n而张三 10 岁那年，一个快死的人出现在他面前，说自己是未来的他，叮嘱他一定要杀死李四。为了改变被李四杀掉的未来，他 20 岁那年杀死李四，之后入狱十年。出狱时他竟看到李四向他走来 —— 他明明已经杀死李四了。将死之际，他的身体因被触碰而穿越到 10 岁的自己面前：「一定要杀死李四！」\n两人各自朝着相反的时间方向走：谁先动手，谁就先成为对方童年里那个「快死的人」。",
+      "metaphor_map": [
+        "李四的时间倒着流：过一天，退一天。",
+        "天花板上那句话，是李四自己在几十年后写下的。",
+        "张三小时候见到的「未来的自己」，是穿越回来的、将死的张三。",
+        "两人互相杀死过对方一次，尸体因触碰而跳到另一个时间点。",
+        "整件事没有超自然力量，是两个逆行者在时间线上互为因果。"
+      ],
+      "facts": {
+        "li_si_travels_backwards_through_time": true,
+        "the_ceiling_message_was_written_by_li_si_himself": true,
+        "zhang_san_was_warned_by_his_own_dying_future_self": true,
+        "each_of_them_killed_the_other": true,
+        "physical_contact_makes_the_other_jump_in_time": true,
+        "li_si_was_killed_by_zhang_san": true,
+        "the_message_came_from_a_ghost_or_curse": false,
+        "the_two_men_knew_each_other_beforehand": false
+      },
+      "cast": [
+        {
+          "name": "李四（我）",
+          "sex": "未写明",
+          "who": "时空逆行者；为了给未来的自己报仇杀死了张三；材料没写性别（张三李四是对举的惯用名）"
+        },
+        {
+          "name": "张三",
+          "sex": "男",
+          "who": "10 岁时被快死的「未来的自己」叮嘱要杀死李四；20 岁杀死李四，出狱后又被李四杀死"
+        }
+      ],
+      "keys": [
+        {
+          "id": "reverse",
+          "label": "时间逆行",
+          "expect": true,
+          "prompt": "李四的时间是倒着走的，与全世界逆向。"
+        },
+        {
+          "id": "self_message",
+          "label": "留言是自己写的",
+          "expect": true,
+          "prompt": "天花板上的字是李四自己在另一个时间点写下的。"
+        },
+        {
+          "id": "mutual",
+          "label": "互相杀死对方",
+          "expect": true,
+          "prompt": "两人各自杀死了对方一次，互为因果。"
+        },
+        {
+          "id": "touch_jump",
+          "label": "触碰即穿越",
+          "expect": true,
+          "prompt": "被对方触碰会让人的身体穿越到另一个时间点，尸体凭空消失就是这个原因。"
+        }
+      ],
+      "difficulty": "中",
+      "soup": "红汤"
+    }
+  ]
+}
