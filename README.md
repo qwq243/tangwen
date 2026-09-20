@@ -572,6 +572,21 @@ python tools/suite.py                  # 全套界面自查
 - 如果以后要脱离网络服务，接回服务端 ASR 只需恢复 `asr.py` 并把 `startVoice()` 里的
   分支换回录音上传，前端其余部分不用动。
 
+## 仓库
+
+代码在 GitHub 私有仓库 [qwq243/tangwen](https://github.com/qwq243/tangwen)，主分支 `main`。
+入库口径跟 `pack.py` 那份「运行期必需」清单对齐 —— 装不进部署包的东西也不进仓库：
+
+| 不进仓库 | 为什么 |
+| --- | --- |
+| `data/` | 排行榜 / 结案数 / 埋点，`server.py` 每次读改写 |
+| `dist/` | 部署包与覆盖包，跑 `pack.py` / `wrangler` 就有 |
+| `tmp/` | 探针产物；两个本机帮手脚本 `_start_local.py` / `_deploy.py` 也在这 |
+| `models/` | 已停用的 ASR 模型，要时按 `asr.py` 里的 release 地址重下 |
+
+**仓库不是 `data/` 的备份** —— 排行榜和埋点只在本机。判题密钥走环境变量 / Pages Secret，
+仓库里没有任何凭据。
+
 ## 目录
 
 ```
