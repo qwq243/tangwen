@@ -54,19 +54,22 @@ npx wrangler pages deploy --branch main
 ```json
 {"ok":true,"typesafe":true,"puzzles":44,"stt":"browser",
  "hint":true,"hint_model":"@cf/meta/llama-3.3-70b-instruct-fp8-fast","hint_fallbacks":3,
- "judge_model":"jev-latest","judge_mode":"typesafe","stats":true,"admin":true}
+ "judge_model":"jev-latest","stats":true,"admin":true}
 ```
 
 | 字段 | 不对意味着什么 |
 |---|---|
 | `typesafe` | 没配 `TYPESAFE_API_KEY`，判题整个不可用 |
-| `judge_mode` | **线上看到 `offline` 就是配错了** —— 那是本机开发用的替身，判得不准 |
 | `judge_model` | 必须就是 `jev-latest`。十档阈值是照它量的，换模型等于换口径 |
 | `hint` | 没绑 Workers AI（绑定名必须是 `AI`），求灯永远同一句兜底 |
 | `hint_model` | 当前主力求灯模型，部署后核对一眼 —— 模型下线是静默故障 |
+| `puzzles` | 卷宗条数。线上下发的是 `functions/puzzles.json`，两副本不一致时它会不对 |
 | `stats` / `admin` | KV 绑定 / 后台密钥有没有到位 |
 
 `stt` 恒为 `browser`，因为它不依赖服务端。
+
+**这一路上不会有 `judge_mode` 字段** —— 那是 `server.py` 才有的（本机的离线替身要从那儿
+认路）。线上只有真判题，没有替身可以走。
 
 部署完还有两问要自己答一遍：
 

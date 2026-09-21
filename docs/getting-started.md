@@ -36,8 +36,9 @@ JUDGE_MODE=offline python server.py
 以及所有卡在线上的边界判定 —— 这些都要真模型。**别拿它验判题口径。**
 
 替身也永远不会混进判题口径里：口径的回归（`tools/judge-check.py`、`tools/cast-check.py`）
-默认不联网，自己带一个照剧本回话的桩；要验真模型得显式加 `--live`。页面上靠
-`/api/health` 的 `judge_mode` 认路，**线上要是看到 `offline`，那就是配错了。**
+默认不联网，自己带一个照剧本回话的桩；要验真模型得显式加 `--live`。想确认手上这个进程
+跑的是哪条路，看 `/api/health` 的 `judge_mode`（这个字段只有 `server.py` 会发，Pages
+那条路上没有 —— 线上只有真判题）。**自建的机器上看到 `offline`，那就是配错了。**
 
 ## 换成真判题
 
