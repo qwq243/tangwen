@@ -72,9 +72,11 @@ const VERDICTS = [
 const HOOK = `(function(){
   var of = window.fetch;
   window.__next = [];
+  window.__served = 0;
   window.fetch = function(input, init){
     var url = typeof input === 'string' ? input : (input && input.url) || '';
     if (url.indexOf('/api/ask') < 0) return of.apply(this, arguments);
+    window.__served += 1;
     var r = window.__next.shift() ||
       { ok:true, label:'无关', verdict:'irrelevant', solved:false, unlocked:[], keys:[], latency_ms:280 };
     return Promise.resolve(new Response(JSON.stringify(r),
@@ -107,6 +109,9 @@ const PROBE = `(function(){
              body: body ? {h:body.clientHeight, scrollH:body.scrollHeight} : null,
              bodyBox:box('.finale-body') },
     keys: [].slice.call(document.querySelectorAll('.key-chip')).map(function(c){return c.textContent;}),
+    keyCls: [].slice.call(document.querySelectorAll('.key-chip')).map(function(c){return c.className;}),
+    served: window.__served || 0,
+    queued: (window.__next || []).length,
     errs:(window.__errs||[]).slice(0,5)
   };
 })()`;
@@ -159,6 +164,11 @@ async function run(v) {
     // 跳过入馆引导，否则它盖在卷面上，截图全废
     await send('Page.addScriptToEvaluateOnNewDocument', { source: SEED });
     await send('Page.addScriptToEvaluateOnNewDocument', { source:
+      // 每个视口开页前清掉**进度存档**：三个视口共用同一个 --user-data-dir
+      // （PORT 在模块加载时定一次），上一轮解锁 / 讲出的关键点会被这一轮 restore 回来 ——
+      // 症状是「这一轮才讲出来」那类断言只在第一个视口过（1b 假红过一次）。
+      // 只清 progress，不动 SEED 塞的 tour / sound。
+      "try{localStorage.removeItem('fengcun.progress')}catch(e){};" +
       "window.__errs=[];window.addEventListener('error',function(e){window.__errs.push('ERR:'+(e.message||''))});" +
       "window.addEventListener('unhandledrejection',function(e){window.__errs.push('REJ:'+String(e.reason&&e.reason.message||e.reason))});" +
       "var __ce=console.error;console.error=function(){window.__errs.push('CONSOLE:'+Array.prototype.join.call(arguments,' '));__ce.apply(console,arguments)};" });
@@ -231,6 +241,25 @@ async function run(v) {
     check(/妹妹是自己锁的门/.test(r.reveal.title), '标题是解锁的关键点', JSON.stringify(r.reveal.title));
     check(!!r.reveal.plate && !r.reveal.plate.hidden, '揭示牌有实体盒子', JSON.stringify(r.reveal.plate));
     check(r.keys.length === 1, '记录面板里落了 1 枚 chip', JSON.stringify(r.keys));
+
+    // ---- 1b. 他自己讲出来了：chips 的第二档 + 「讲出来了」那张牌 ----
+    /* 结案有两条路（见 server.py 的 SOLVE_RULE）：除了「整个流程讲一遍」，
+       **关键点自己讲出来到够**也算。所以这一档要有自己看得见的样子 ——
+       不然玩家不知道「说出来」这句话是有分量的，只会一条条接着问下去。 */
+    await sleep(2600); // 等上一张揭示牌退场（不然两张叠在一起，量到的是旧的）
+    await askScripted({ ok: true, label: '是', verdict: 'yes', solved: false, latency_ms: 380,
+      unlocked: ['k1', 'k2', 'k3'], stated: ['k1'], keys: KEYS });
+    await sleep(300);
+    r = await ev(PROBE);
+    await shot(`fx_${v.label}_1b_said.png`);
+    check(r.reveal.hidden === false && r.reveal.kicker === '讲 出 来 了',
+      '讲出来了弹揭示牌（kicker = 讲 出 来 了）', JSON.stringify(r.reveal.kicker));
+    check(/已讲出\s*1\s*\/\s*4/.test(r.reveal.count), '计数 = 已讲出 1 / 4', JSON.stringify(r.reveal.count));
+    check(r.keyCls.filter((c) => /\bsaid\b/.test(c)).length === 1,
+      '自己讲出来的那枚 chip 标了 .said（只是问到的那两枚不标）', JSON.stringify(r.keyCls));
+    check(r.keyCls.length === 3 && r.keyCls.every((c) => /\bon\b/.test(c)),
+      '三枚 chip 都还亮着（问到 = 亮，讲出来 = 亮 + 说）', JSON.stringify(r.keyCls));
+    console.log(`     诊断 served=${r.served} queued=${r.queued} reveal="${r.reveal.kicker}"/"${r.reveal.count}"`);
 
     // ---- 2. 结案：印章 ----
     await sleep(2600); // 等揭示牌退场

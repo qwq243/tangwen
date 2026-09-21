@@ -1381,7 +1381,7 @@ html, body {
   from { transform: scale(.8); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
 }
-/* 「讲一遍就结案」：关键点问到最后一个之后挂在 chips 末尾的那一枚。
+/* 「讲出来就结案」：关键点问到最后一个之后挂在 chips 末尾的那一枚。
    它不是线索，是**下一步该怎么走**：所以虚线框、不填底色，跟前面那些实心的线索
    一眼分得开（也只是句话，按不动）。口径见 server.py 的 SOLVE_RULE。 */
 .key-chip.ready {
@@ -1391,6 +1391,29 @@ html, body {
   box-shadow: none;
   color: var(--lamp);
   letter-spacing: .1em;
+}
+/* 「他自己讲出来了」：同一排 chips 里的**第二档**。
+   问到 = 亮着；讲出来 = 亮着 + 右上角缀一枚小「说」。
+   结案看的是后者（SOLVE_RULE 路 (1)：关键点自己讲出来、讲到够），所以两档要一眼
+   分得开；但也别抢 —— 比问到亮一档、加一枚小印，够了。 */
+.key-chip.said {
+  position: relative;
+  background: rgba(215, 161, 90, .32);
+  border-color: #e6bc82;
+  color: #ffe3c2;
+  box-shadow: inset 0 0 0 1px rgba(122, 92, 50, .7);
+}
+.key-chip.said::after {
+  content: "说";
+  position: absolute;
+  top: -6px;
+  right: -5px;
+  padding: 1px 2px;
+  font-size: 8px;
+  line-height: 1;
+  color: var(--soot);
+  background: var(--lamp);
+  border-radius: 2px;
 }
 .ledger {
   list-style: none;
@@ -1752,8 +1775,10 @@ html, body {
   letter-spacing: .18em;
   font-weight: 400;
 }
-/* min-height 由最高的一张卡撑住：翻页时卡面高度不跳。探针 tour-check.mjs 钉着。 */
-.tour-body { min-height: 156px; }
+/* min-height 由最高的一张卡撑住：翻页时卡面高度不跳。探针 tour-check.mjs 钉着。
+   2026-09-21 156 → 176：第四卡（结案与求灯）按新口径写长了 20px（「讲出来就结案」那句），
+   文案是这一版要说的正事，所以抬 min-height 而不是砍话。紧凑态同理（见下面的媒体查询）。 */
+.tour-body { min-height: 176px; }
 .tour-card { animation: tour-in .26s ease both; }
 .tour-card[hidden] { display: none; }
 @keyframes tour-in {
@@ -1850,7 +1875,7 @@ html, body {
 @media (max-width: 720px) {
   .tour { padding: 16px 10px; }
   .tour-sheet { padding: 20px 18px 16px; }
-  .tour-body { min-height: 180px; }
+  .tour-body { min-height: 200px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .tour-card { animation: none; }

@@ -89,6 +89,10 @@
      长时间没操作会停表，暂停的那段不计进来，见下面「计时」那一段。 */
   const activeMs = new Map();
   const unlockedMap = new Map();
+  /* 「他自己讲出来了的关键点」（结案的两条路之一看它，见 server.py 的 SOLVE_RULE）。
+     跟 unlockedMap 一样跨轮累积：服务端会回一份 stated，下一问再带回去 ——
+     不带回去的话「一句话讲一个关键点」这种打法永远凑不齐。 */
+  const statedMap = new Map();
   const solvedSet = new Set();
   /* 「求过灯」和「灯上写了什么」是两回事：hintedSet 只记前者（排行榜的「孤灯」看它），
      hintMap 记后者。只存 hintedSet 的话，刷新一次提示正文就没了 ——
@@ -222,6 +226,7 @@
     try {
       const raw = JSON.parse(localStorage.getItem("fengcun.progress") || "{}");
       Object.entries(raw.unlocked || {}).forEach(([id, keys]) => unlockedMap.set(id, keys));
+      Object.entries(raw.stated || {}).forEach(([id, keys]) => statedMap.set(id, keys));
       (raw.solved || []).forEach((id) => solvedSet.add(id));
       (raw.hinted || []).forEach((id) => hintedSet.add(id));
       Object.entries(raw.hints || {}).forEach(([id, text]) => { if (text) hintMap.set(id, text); });
@@ -234,6 +239,8 @@
   function saveProgress() {
     const unlocked = {};
     unlockedMap.forEach((v, k) => { unlocked[k] = v; });
+    const stated = {};
+    statedMap.forEach((v, k) => { stated[k] = v; });
     const active = {};
     activeMs.forEach((v, k) => { active[k] = Math.round(v); });
     const history = {};
@@ -243,6 +250,7 @@
     try {
       localStorage.setItem("fengcun.progress", JSON.stringify({
         unlocked,
+        stated,
         solved: [...solvedSet],
         hinted: [...hintedSet],
         hints,
@@ -1155,18 +1163,24 @@
     const last = hist[hist.length - 1];
     setText(lastMsEl, last && last.ms != null ? `${last.ms}ms` : "");
     const found = new Set(unlockedMap.get(p.id) || []);
+    const said = new Set(statedMap.get(p.id) || []);
     const lit = (p.keys || []).filter((k) => found.has(k.id));
-    /* 关键点齐了、这一卷又还没结案 → 在那排 chips 末尾挂一枚常驻的「讲一遍就结案」。
-       结案现在只认玩家自己把汤底说出来（SOLVE_RULE），问齐只是进度；
-       没有这枚常驻件的话，「chips 全亮了却什么都没发生」看着就像坏了。
+    /* 两档进度画在同一排上（口径见 server.py 的 SOLVE_RULE）：
+         .on   = 这个关键点他**问到**了
+         .said = 这个关键点他**自己讲出来**了（结案的两条路之一看的是它）
+       讲到够就当场结案，所以这一排同时是「我离结案还有多远」的读数。
+       关键点问到齐、却一个都没自己讲出来 → 末尾挂一枚常驻的下一步提示：
+       没有它的话，「chips 全亮了却什么都没发生」看着就像坏了。
        （紧凑态 .keys 整排是 display:none，那边的提示出路是解锁牌那一下。） */
-    const ready = lit.length > 0 && lit.length === (p.keys || []).length && !solvedSet.has(p.id);
-    const keysSig = lit.map((k) => k.id).join(",") + (ready ? "|ready" : "");
+    const allFound = lit.length > 0 && lit.length === (p.keys || []).length;
+    const ready = allFound && !solvedSet.has(p.id);
+    const keysSig = lit.map((k) => k.id + (said.has(k.id) ? "S" : "")).join(",")
+      + (ready ? "|ready" : "");
     if (force || keysEl.dataset.sig !== keysSig) {
       keysEl.dataset.sig = keysSig;
       keysEl.innerHTML = lit.map((k) =>
-        `<span class="key-chip on">${escapeHtml(k.label)}</span>`
-      ).join("") + (ready ? '<span class="key-chip ready">讲一遍就结案</span>' : "");
+        `<span class="key-chip on${said.has(k.id) ? " said" : ""}">${escapeHtml(k.label)}</span>`
+      ).join("") + (ready ? '<span class="key-chip ready">讲出来就结案</span>' : "");
       keysEl.hidden = lit.length === 0;
     }
     const sig = p.id + "|" + hist.length + "|" + (last ? last.ms : "");
@@ -1329,6 +1343,9 @@
           question,
           history: apiHistory,
           unlocked: unlockedMap.get(p.id) || [],
+          /* 已经自己讲出来的关键点一起带上（结案的路 (1) 看它，见 server.py 的 SOLVE_RULE）：
+             服务端只判「这一句」，攒齐是客户端的事。 */
+          stated: statedMap.get(p.id) || [],
         }),
       });
       const data = await res.json();
@@ -1344,19 +1361,31 @@
       });
       historyMap.set(p.id, hist);
       const before = new Set(unlockedMap.get(p.id) || []);
+      const beforeSaid = new Set(statedMap.get(p.id) || []);
       if (data.unlocked) unlockedMap.set(p.id, data.unlocked);
+      if (data.stated) statedMap.set(p.id, data.stated);
       if (data.keys) p.keys = data.keys.map((k) => ({ id: k.id, label: k.label }));
+      const newlySaid = (data.stated || []).filter((id) => !beforeSaid.has(id));
+      if (newlySaid.length && !data.solved) {
+        /* 他自己讲出了一个关键点 —— 这是**结案进度**（路 (1)），值得单独说一声：
+           不然玩家不知道「说出来」这件事有分量，只会继续一句句问。 */
+        const labels = (p.keys || []).filter((k) => newlySaid.includes(k.id)).map((k) => k.label);
+        const total = (p.keys || []).length;
+        const got = (statedMap.get(p.id) || []).length;
+        showReveal(labels.join(" · ") || "说出来了一个", `已讲出 ${got} / ${total}`, "讲 出 来 了");
+        sfx("unlock");
+      }
       const newly = (data.unlocked || []).filter((id) => !before.has(id));
-      if (newly.length && !data.solved) {
+      if (newly.length && !data.solved && !newlySaid.length) {
         const labels = (p.keys || []).filter((k) => newly.includes(k.id)).map((k) => k.label);
         const total = (p.keys || []).length;
         const found = (unlockedMap.get(p.id) || []).length;
-        /* 关键点齐了，但还没结案 —— 现在这两件事是分开的（见 server.py 的 SOLVE_RULE）：
-           问齐只说明料凑够了，得玩家自己把汤底讲一遍才对得上「结案」那枚印。
-           所以最后一块拼图落下时，牌子要换个说法告诉他下一步干什么，
+        /* 关键点问齐了，但还没结案 —— 现在这两件事是分开的（见 server.py 的 SOLVE_RULE）：
+           问齐只说明料凑够了，得他自己把关键点讲出来（或把整个流程讲一遍）才对得上
+           「结案」那枚印。所以最后一块拼图落下时，牌子要换个说法告诉他下一步干什么，
            不然玩家会以为游戏卡住了（这也是「替玩家结案」那个旧口径的替代）。 */
         if (total > 0 && found >= total) {
-          showReveal("把汤底讲一遍", "关键点齐了 · 讲对了才结案", "关 键 点 齐 了");
+          showReveal("把关键点讲出来", "关键点齐了 · 讲出来就结案", "关 键 点 齐 了");
         } else {
           showReveal(labels.join(" · ") || "新线索", total ? `已解锁 ${found} / ${total}` : "");
         }
@@ -2057,7 +2086,11 @@
         body: JSON.stringify({
           puzzle_id: p.id,
           history: hist.filter((h) => h.kind === "turn"),
-          unlocked: unlockedMap.get(p.id) || [],
+          /* 求灯要指「还没点亮的方向」，而**他自己讲出来的也算点亮了** ——
+             指着一个他刚说过的关键点让他想，是明显的蠢事。所以这一路给的是两者的并集；
+             给 /api/ask 的那份仍然只带 unlocked（那边的两档语义分开用）。 */
+          unlocked: [...new Set([...(unlockedMap.get(p.id) || []),
+                                 ...(statedMap.get(p.id) || [])])],
           /* 已经给过的那句一起带上：不然连点两次求灯会拿到近乎同一句话
              （服务端固定指「第一个还没解锁的方向」，温度 0.4 下措辞也差不多）。 */
           prev: hintMap.get(p.id) || "",

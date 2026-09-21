@@ -1,27 +1,27 @@
 #!/usr/bin/env python3
-"""结案口径回归：**关键点问齐 ≠ 结案**，只有「玩家把汤底说出来了」才结案。
+"""结案口径回归：**两条路，走通哪条都结案**。
 
-为什么单开一条（2026-09-20 用户实报）：
-    《柜中的孩子》里玩家一路问下来，最后一问把最后一个关键点问到了，于是当场结案
-    —— 可他自己并没有想通（连「平行世界」都没往那儿想）。旧口径是
-    `solved = 所有关键点都问到了`，而关键点是靠**探测性是非题**一个个问出来的：
-    问齐只说明料凑够了，说没说圆是另一回事。现在的口径见 server.py 的 SOLVE_RULE：
-    结案只认 is_full_guess + guess_correct 同时够线。
+    (1) 关键点被玩家**自己讲出来**、讲到够（`said_floor` + `keys_ratio`）；
+    (2) 整段猜中（is_full_guess + guess_correct）。
 
-第二天同一个玩家报了反过来的一头（2026-09-21）：「无法结束，明明都答出来了」。
-    《柜中的孩子》讲完整了，末尾顺手一句「对不对？」—— is_full_guess 是拿**语气**
-    判的（是不是陈述句），于是被这一句打到 0.6~0.75 那条线上左右横跳：同一句话连打
-    两次，一次结案一次不结案，不结案那次落印还是「是」。问法已改成只看内容（见
-    BASE_QUESTIONS.is_full_guess），另外把「机制说对了却没结案」单独标出来落「接近了」
-    并记一笔 nearmiss（下面第 5 节）—— 那一档的存在本身就是故障信号。
+**「关键点问到齐」始终不是判据** —— 那是进度。为什么这两条、以及三次实报的来龙去脉，
+全写在 server.py 的 SOLVE_RULE 上面，这里只留验收：
+
+    2026-09-20《柜中的孩子》：问齐最后一个关键点就当场结案，玩家其实没想通 → 口径改成
+        只认「猜出来了」；
+    2026-09-21 上午：「无法结束，明明都答出来了」—— is_full_guess 拿**语气**判事，
+        讲完整带一句「对不对？」就被打到线下，同一句话时结时不结 → 问法改成只看内容；
+    2026-09-21 口径对齐（用户原话）：「小游戏，不要求复述整个故事；几个关键点都讲出来了
+        就结案，判断已经猜出整个流程也结案」→ 补上路 (1)，他说出来就算，不必串成一段。
 
 默认那一段不联网：把 `typesafe` 换成一个照剧本回话的桩，喂的是**判题输出**而不是问题
 ——被测的正是 judge() 拿到那组答案之后怎么落印、结不结案。所以它跑得飞快、结果稳定，
-可以常驻。它同时跑一遍双链路 parity（说明正文 + 三个阈值 + solved 判据 + state 字段顺序）。
+可以常驻。它同时跑一遍双链路 parity（说明正文 + 五个阈值 + solved 判据 + said 那条路
++ state 字段顺序）。
 
 **--live 那一段反过来**：打真接口，问的是「模型到底认不认得出玩家把汤底讲出来了」
 ——阈值是照这颗模型量的，模型行为漂了就靠这几条逮住（十来次调用，一两分钟）。
-末尾两条专门盯着「讲完整 + 求证尾巴」这一类，就是 2026-09-21 那一报的形状。
+末尾两条专盯「讲完整 + 求证尾巴」这一类，就是 2026-09-21 上半场那一报的形状。
 
 用法：
     python tools/judge-check.py            # 离线那段（全绿返回 0）
@@ -82,6 +82,7 @@ def stub_typesafe(scenes: dict):
     """照剧本回话的 typesafe 桩：state 里那句话决定这一问回什么答案。
 
     关键点那几问按场景里的 `key` 统一给分（探测题问齐就是靠它），
+    「自己讲出来」那几问按 `said` 给（`said_first` / `said_last` 用来只给某一个关键点），
     另外三问（extract / is_full_guess / guess_correct）逐场景手写。
     """
     def stub(state: dict, questions: dict):
@@ -90,9 +91,18 @@ def stub_typesafe(scenes: dict):
         if scene is None:
             raise AssertionError(f"剧本里没有这一问：{utt}")
         answers: dict = {}
+        key_ids: list[str] = []
         for qid in questions:
             if qid.startswith("key_"):
+                key_ids.append(qid[len("key_"):])
                 answers[qid] = {"noul": scene.get("key", 0.0)}
+        for i, kid in enumerate(key_ids):
+            score = scene.get("said", 0.0)
+            if scene.get("said_first"):
+                score = scene.get("said", 0.9) if i == 0 else 0.0
+            if scene.get("said_last"):
+                score = scene.get("said", 0.9) if i == len(key_ids) - 1 else 0.0
+            answers[f"said_{kid}"] = {"noul": score}
         answers["trying_to_extract"] = {"noul": scene.get("extract", 0.0)}
         answers["is_full_guess"] = {"noul": scene.get("full", 0.0)}
         answers["guess_correct"] = {"noul": scene.get("correct", 0.0)}
@@ -129,6 +139,14 @@ SCENES = {
     # 反向的钉子：探针哪怕把机制分也顶过线，也不许落「接近了」
     # —— 这一条钉的是「接近了」那一档的下沿（full_guess 够不到 close_floor 就不算接近）
     "探针顶穿了机制分": {"key": 0.2, "full": 0.05, "correct": 0.9},
+    # 路 (1)（2026-09-21 口径对齐）：关键点他**自己讲出来了** → 结案。
+    # 这一句既没问出关键点（key 0）、也没把整个流程讲一遍（full 0.1）——全靠 said 那一条。
+    "自己把关键点都讲出来了": {"key": 0.0, "said": 0.95, "full": 0.1, "correct": 0.4},
+    # 路 (1) 的反面：关键点问齐了、但只讲出一个 → **不结案**（问齐永远只是进度）
+    "问齐了但只讲出一个": {"key": 0.95, "said_first": True, "said": 0.9,
+                    "full": 0.1, "correct": 0.3},
+    # 跨轮累积：客户端把上一轮的 stated 带回来，这一句只补最后一个 → 该结案
+    "补上最后一个": {"key": 0.2, "said_last": True, "said": 0.9, "full": 0.05, "correct": 0.2},
 }
 
 
@@ -199,8 +217,9 @@ def main() -> int:
         if not ok:
             fails.append(what)
 
-    def run(utt: str, unlocked: list[str] | None = None) -> dict:
-        return srv.judge(puzzle, utt, [], unlocked or [])
+    def run(utt: str, unlocked: list[str] | None = None,
+            stated: list[str] | None = None) -> dict:
+        return srv.judge(puzzle, utt, [], unlocked or [], stated or [])
 
     print("\n=== 1. 关键点问齐不再是结案判据（2026-09-20 实报的那一条）===")
     r = run("问到了最后一个关键点", unlocked=keys[:-1])
@@ -227,6 +246,28 @@ def main() -> int:
     check(r["bottom"] == puzzle["bottom"], "画卷拿得到汤底正文")
     check(sorted(r["unlocked"]) == sorted(keys), "整段说对＝关键点按定义全算问到")
     check(r["near_miss"] is False, "结案那一档不标 near_miss（那是「没结案」的故障灯）")
+
+    print("\n=== 3b. 路 (1)：关键点他**自己讲出来了** → 结案（2026-09-21 口径对齐）===")
+    # 这是用户那两句话的落地：「不要求复述整个故事 / 几个关键点都讲出来了就结案」。
+    # 场景里 key=0（一个都没问出来）、full=0.1（也没整段讲）——结案只可能来自 said 那条路。
+    r = run("自己把关键点都讲出来了")
+    check(r["solved"] is True and r["verdict"] == "solved",
+          "关键点全部自己讲出来 → 结案（不必串成完整的汤底）", f"{r['label']} solved={r['solved']}")
+    check(r["say"] != "说对了。汤底封卷。", "落的是「关键点」那句，不是「整段说对了」那句", r["say"])
+    check(r["bottom"] == puzzle["bottom"], "汤底照常放出来")
+    check(all(k["said"] for k in r["keys"]), "keys 视图里每一条都标着 said")
+    # 反面：问齐了、但只讲出一个 → 不许结案。这一条防的是 2026-09-20 那个口径回潮。
+    r = run("问齐了但只讲出一个")
+    check(r["solved"] is False, "关键点问齐、但只自己讲出一个 → 不结案",
+          f"{r['label']} solved={r['solved']}")
+    check(len([k for k in r["keys"] if k["said"]]) == 1, "said 只记下他真的讲出来的那一条")
+    check(r["bottom"] is None, "汤底不出去")
+    # 跨轮累积：上一轮讲过的由客户端带回来（stated），这一句只补最后一个 → 该结案
+    r = run("补上最后一个", stated=keys[:-1])
+    check(r["solved"] is True, "上一轮讲的带回来 + 这一句补最后一个 → 结案（跨轮累积）",
+          f"stated={len(r['stated'])}/{len(keys)}")
+    check(sorted(r["stated"]) == sorted(keys), "返回的 stated 是全量（客户端存的就是它）",
+          f"{r['stated']}")
 
     print("\n=== 4. 说了但没说圆：落「接近了」，不结案 ===")
     r = run("整段讲歪了")
@@ -265,7 +306,8 @@ def main() -> int:
             print("  ✗ " + e)
         fails.append("双链路口径不一致")
     else:
-        print("  ✓ 说明正文 / 三个阈值 / solved 判据 / state 字段顺序 两边一致")
+        print("  ✓ 说明正文 / 五个阈值 / solved 的两条路 / said_ 问句 / nearmiss / "
+              "state 字段顺序 两边一致")
 
     if args.live:
         fails.extend(live_cases(srv, real_typesafe, args.verbose))
@@ -274,7 +316,7 @@ def main() -> int:
     if fails:
         print(f"[FAIL] {len(fails)} 项没过：{' / '.join(fails)}")
         return 1
-    print("[OK] 结案只认「猜出来了」；关键点问齐只是进度")
+    print("[OK] 结案两条路：关键点自己讲出来到够 / 整段猜中；问齐只是进度")
     return 0
 
 

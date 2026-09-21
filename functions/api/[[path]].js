@@ -32,16 +32,23 @@ const HOST_LABELS = {
 const SOFT_RESCUE_MIN = 0.3; // 软档（不重要 / 无关）的绝对分量线
 const SOFT_RESCUE_RATIO = 0.6; // 软档还得追到 unanswerable 的六成，免得乱码顺带的那点分量把它撬走
 
-/* 结案口径（SOLVE-RULE）：**结案只认「玩家把汤底说出来了」**，不认「关键点问齐了」。
-   两次实报、两头都修过，「为什么」的正文在 server.py 同名常量上面 —— 那边是本账，
-   这边留结论：2026-09-20 修的是「关键点问齐就当场结案」（玩家没想通也被结案）；
-   2026-09-21 修的是「讲完整了却不结案」（is_full_guess 拿语气当判据，一句「对不对？」
-   就把它打到线下）。三个数两边必须同值，改一边会被 tools/cast-check.py 的 parity
-   当场逮住（跑 tools/judge-check.py 也会带上）。 */
+/* 结案口径（SOLVE-RULE）：**两条路，走通哪条都结案** —— (1) 关键点被玩家自己讲出来、讲到够；
+   (2) 整段猜中。路 (1) 的关键在「自己讲出来」：「问到」不算（那是 2026-09-20 那一报）。
+   「为什么」的正文在 server.py 同名常量上面 —— 那边是本账，这边只留结论：
+   2026-09-20 修「关键点问齐就当场结案」；2026-09-21 上午修「讲完整了却不结案」
+   （is_full_guess 拿语气当判据，一句「对不对？」就把它打到线下）；2026-09-21 口径对齐
+   （小游戏，不要求复述整个故事）。数值两边必须同值，改一边会被 tools/cast-check.py 的
+   parity 当场逮住（跑 tools/judge-check.py 也会带上）。 */
 const SOLVE_RULE = {
   full_guess: 0.75,     // is_full_guess：这一句是在把汤底讲出来，而不是在问一个点
   guess_correct: 0.78,  // guess_correct：讲出来的版本抓住了核心机制
   close_floor: 0.45,    // 「接近了」那一档的下沿：低于这条线就不假装接近
+  said_floor: 0.43,     // 单个关键点算「他自己讲出来了」的分线（路 (1) 用）。
+                        // 量出来的数（见 server.py 同名常量的注释）：真话最低 0.47、
+                        // 杂音最高 0.39，取中点。问句不改就别单独动这个数。
+  keys_ratio: 1.0,      // 路 (1) 要讲出多少比例的关键点 —— **难度就是这个旋钮**
+                        // （1.0 = 全都讲出来；0.75 = 四个里讲出三个就结案。
+                        //  条数 = int(键数 × keys_ratio)，向下取整）
 };
 
 const BASE_QUESTIONS = {
@@ -118,6 +125,21 @@ function buildQuestions(puzzle) {
         `关键点：${key.prompt} 期望主持人回答「${expect}」。` +
         "只有指向该点才给高分；无关闲问给低分。",
     };
+    /* 「自己讲出来了」—— 结案的两条路之一（见 SOLVE_RULE），跟上面那条的差别只有一头：
+       上面问「他问到没问到这一点」，这条问「这一句里有没有这一点、而且是他自己讲的」。
+       带求证语气（「……对吧？」）算他讲出来了；纯粹提一个是非问题、自己没下结论，不算。
+       与 server.py 的 build_questions 同名量（措辞、分线都要一致）。 */
+    questions[`said_${key.id}`] = {
+      type: "noul",
+      instructions:
+        "玩家这一句里有没有**自己把这个关键点说出来、而且说对了**？" +
+        "近义、隐喻、带求证语气（「……对吧？」）都算他说出来了。" +
+        "他只是在提一个是非问题、自己没有把这一点讲出来，不算；" +
+        "他讲反了、讲错了也不算。" +
+        "**只勾这句话真正讲到的那一条**：他说的是别的关键点、或者只是泛指，" +
+        "不要顺带把这一条也算上 —— 要在这句话里真的讲出这一点的人 / 事才算。" +
+        `关键点：${key.prompt} 期望主持人回答「${expect}」。`,
+    };
   }
   return questions;
 }
@@ -183,9 +205,12 @@ async function typesafe(env, state, questions) {
   return { raw: body, latencyMs: Date.now() - t0 };
 }
 
-async function judge(env, puzzle, utterance, history, unlocked) {
+async function judge(env, puzzle, utterance, history, unlocked, stated) {
   const keys = puzzle.keys || [];
   const found = new Set((unlocked || []).filter((k) => typeof k === "string"));
+  /* 「他自己讲出来了的关键点」—— 跟 unlocked 一样是**跨轮累积**的：客户端把上一轮的
+     结果带回来（app.js 的 statedMap），这一轮把新讲出的并进去。结案的路 (1) 看的就是它。 */
+  const said = new Set((stated || []).filter((k) => typeof k === "string"));
   const { raw, latencyMs } = await typesafe(
     env,
     {
@@ -226,8 +251,11 @@ async function judge(env, puzzle, utterance, history, unlocked) {
   const nearMiss =
     guessOk >= SOLVE_RULE.guess_correct && !guessHit && fullGuess >= SOLVE_RULE.close_floor;
   if (guessHit) {
-    // 整段说对了：关键点按定义全算问到（那排 chips 是进度条，不再决定结案）
-    for (const k of keys) found.add(k.id);
+    // 整段说对了：关键点按定义全算问到、也全算他自己讲出来了（两排进度都填满）
+    for (const k of keys) {
+      found.add(k.id);
+      said.add(k.id);
+    }
   } else {
     for (const key of keys) {
       const score = Number((answers[`key_${key.id}`] || {}).noul || 0);
@@ -237,10 +265,23 @@ async function judge(env, puzzle, utterance, history, unlocked) {
       }
     }
   }
+  /* 「自己讲出来」逐条累计（**不结案也要记**：它是进度，也是下一次结案的凭据）。
+     跟 found 那条不问 choice：「是他自己讲的」这件事跟主持人这一问答的是是/不是无关。 */
+  const saidScores = {};
+  for (const key of keys) {
+    const score = Number((answers[`said_${key.id}`] || {}).noul || 0);
+    saidScores[key.id] = Math.round(score * 1000) / 1000;
+    if (score >= SOLVE_RULE.said_floor) said.add(key.id);
+  }
 
-  // 结案 = 猜出来了（SOLVE_RULE）。**关键点问齐不再是结案判据** ——
-  // 问齐只是「料凑够了」，玩家没说圆就接着问 / 去求灯，别替他揭底。
-  const solved = keys.length > 0 && guessHit;
+  /* 结案（SOLVE-RULE）：两条路，走通哪条都算 ——
+       (1) 关键点他自己讲出来了、讲到够（难度旋钮 keys_ratio）；
+       (2) 整段猜中（guessHit）。
+     「关键点问齐」（found）**始终不是判据**：那是进度条，2026-09-20 那一报就出在这儿。 */
+  const needKeys = keys.length > 0 ? Math.trunc(keys.length * SOLVE_RULE.keys_ratio) : 0;
+  const saidHit =
+    keys.length > 0 && keys.filter((k) => said.has(k.id)).length >= needKeys;
+  const solved = keys.length > 0 && (guessHit || saidHit);
   let verdict;
   let label;
   let say;
@@ -251,7 +292,8 @@ async function judge(env, puzzle, utterance, history, unlocked) {
   } else if (solved) {
     verdict = "solved";
     label = "结案";
-    say = "说对了。汤底封卷。";
+    // 两条路各说各的：整段讲出来是一回事，关键点讲齐是另一回事（后者不必复述故事）
+    say = guessHit ? "说对了。汤底封卷。" : "关键点都说出来了。汤底封卷。";
   } else {
     verdict = choice in HOST_LABELS ? choice : "unanswerable";
     // 「接近了」是两种半成品 —— 都不结案，但让他看见方向对了：
@@ -283,7 +325,11 @@ async function judge(env, puzzle, utterance, history, unlocked) {
     solved,
     near_miss: nearMiss,
     unlocked: [...found].sort(),
-    keys: keys.map((k) => ({ id: k.id, label: k.label, found: found.has(k.id) })),
+    // 跨轮累积的「他自己讲出来了」—— 客户端存下来、下一轮带回来（跟 unlocked 一样）
+    stated: [...said].sort(),
+    keys: keys.map((k) => ({
+      id: k.id, label: k.label, found: found.has(k.id), said: said.has(k.id),
+    })),
     latency_ms: Math.round(latencyMs),
     judge: {
       choice,
@@ -294,6 +340,8 @@ async function judge(env, puzzle, utterance, history, unlocked) {
       extract: Math.round(extract * 1000) / 1000,
       full_guess: Math.round(fullGuess * 1000) / 1000,
       guess_ok: Math.round(guessOk * 1000) / 1000,
+      // 逐条「自己讲出来」的分：调 said_floor 那个旋钮时要看的就是它
+      said: saidScores,
       model: raw.model,
       usage: raw.usage,
     },
@@ -1021,6 +1069,8 @@ export async function onRequest(context) {
     const question = String(body.question || "").trim();
     const history = Array.isArray(body.history) ? body.history : [];
     const unlocked = Array.isArray(body.unlocked) ? body.unlocked : [];
+    // 跨轮累积的「他自己讲出来的关键点」，见 judge() 的 stated
+    const stated = Array.isArray(body.stated) ? body.stated : [];
     const puzzle = PUZZLES[pid];
     if (!puzzle) return json({ ok: false, error: "puzzle not found" }, 404);
     if (!question) return json({ ok: false, error: "empty question" }, 400);
@@ -1030,7 +1080,7 @@ export async function onRequest(context) {
        waitUntil：KV 写不挡住回流，写失败只丢一笔计数。 */
     context.waitUntil(bumpTrack(env, "ask", pid).catch(() => {}));
     try {
-      const result = await judge(env, puzzle, question, history, unlocked);
+      const result = await judge(env, puzzle, question, history, unlocked, stated);
       if (result.solved) context.waitUntil(bumpTrack(env, "solve", pid).catch(() => {}));
       // 讲对了却没结案：这一档**不该有**（理由见 SOLVE_RULE 与 judge() 的注释）。
       // 记它是为了它再出现时后台看得见 —— 不用再靠玩家报「我明明答出来了」。

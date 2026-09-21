@@ -40,10 +40,11 @@ OUT = ROOT / "tmp" / "_o_admin-check.txt"
 
 # 启动器：import server 之后把两个要联网的函数换成桩，再照原样 main()。
 # 为什么不改 server.py 加个开关 —— 测试的机关不该长在生产代码里。
-# 判题桩让每一问都当成「玩家把汤底说出来了」=> 判成结案（口径见 server.py 的 SOLVE_RULE：
-# 关键点问齐**不再是**结案条件，所以这里不能只给 key_* 满分 —— 老桩就是这么写的，
-# 改口径那次它一路假红）。关键点那几问也照旧给满分，好让「分卷明细」那几条断言有数可对；
-# 求灯桩直接回一句固定文本（真求灯要打 Workers AI，离线时会退兜底，不稳定）。
+# 判题桩按**结案的两条路**分场景（口径见 server.py 的 SOLVE_RULE）：默认那一路当「整段说对了」，
+# 另外两路分别当「关键点自己讲出来」（said 那一组）与「机制说对了却没结案」（nearmiss 那一档）。
+# 注意不能只给 key_* 满分就算结案 —— 老桩就是这么写的，改口径那次它一路假红；
+# key_* 满分只是为了「分卷明细」那几条断言有数可对。求灯桩直接回一句固定文本
+# （真求灯要打 Workers AI，离线时会退兜底，不稳定）。
 JUDGE_STUB = '''# -*- coding: utf-8 -*-
 import sys
 
@@ -56,9 +57,17 @@ def fake_typesafe(state, questions):
     utt = str(state.get("player_utterance") or "")
     if "桩-崩" in utt:
         raise RuntimeError("stub judge down")
-    # 「桩-讲了没结案」= 机制说对了、只是没当成整段汤底讲（nearmiss 那一档，
-    # 2026-09-21 实报的形状）：is_full_guess 够不到线，guess_correct 够线
-    full, correct = (0.6, 0.9) if "桩-讲了没结案" in utt else (0.96, 0.96)
+    # 三个场景（口径见 server.py 的 SOLVE_RULE，那里有两条结案的路）：
+    #   默认            —— 整段说对了（路 (2)）
+    #   「桩-讲出关键点」—— 关键点全靠他自己讲出来（路 (1)）：没整段讲、也没问到，
+    #                      只有 said 那组分高
+    #   「桩-讲了没结案」—— 机制说对了、却没被当成整段汤底讲（nearmiss 那一档）
+    if "桩-讲出关键点" in utt:
+        full, correct, key_all, said_all = 0.05, 0.2, 0.0, 1.0
+    elif "桩-讲了没结案" in utt:
+        full, correct, key_all, said_all = 0.6, 0.9, 1.0, 0.0
+    else:
+        full, correct, key_all, said_all = 0.96, 0.96, 1.0, 0.0
     answers = {{
         "trying_to_extract": {{"noul": 0.0}},
         # 判成「整段说对了」：结案现在只认这两条线（SOLVE_RULE），
@@ -70,7 +79,9 @@ def fake_typesafe(state, questions):
     }}
     for name in questions:
         if name.startswith("key_"):
-            answers[name] = {{"noul": 1.0}}
+            answers[name] = {{"noul": key_all}}
+        elif name.startswith("said_"):
+            answers[name] = {{"noul": said_all}}
     return {{"answers": answers, "model": "stub", "usage": {{}}}}, 12.0
 
 
@@ -303,6 +314,19 @@ def main() -> int:
            and after_nn.get("ask") == before_nn.get("ask", 0) + 1,
            json.dumps({"verdict": nn.get("verdict"), "nearmiss": after_nn.get("nearmiss"),
                        "solve": after_nn.get("solve"), "ask": after_nn.get("ask")},
+                      ensure_ascii=False))
+
+        # 8c-3. 结案的路 (1)（2026-09-21 口径对齐）：关键点他自己讲出来就结案 ——
+        #     不必整段复述。这一笔也该记 solve（结案就是结案），且不该记 nearmiss。
+        before_k, _ = stats_now(token)
+        st, kk = jcall("/api/ask", "POST", {"puzzle_id": "jumper", "question": "桩-讲出关键点"})
+        after_k, _ = stats_now(token)
+        ok("关键点自己讲出来 → 结案 + 记 solve + 不记 nearmiss",
+           st == 200 and kk.get("solved") is True and kk.get("say") != "说对了。汤底封卷。"
+           and after_k.get("solve") == before_k.get("solve", 0) + 1
+           and after_k.get("nearmiss") == before_k.get("nearmiss", 0),
+           json.dumps({"solved": kk.get("solved"), "say": kk.get("say"),
+                       "solve": after_k.get("solve"), "nearmiss": after_k.get("nearmiss")},
                       ensure_ascii=False))
 
         # 8d. 模型调用记账（2026-09-20 加）：求灯按「这一句是谁答的」分开记，

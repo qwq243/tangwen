@@ -238,27 +238,46 @@ def typesafe(state: dict, questions: dict) -> tuple[dict, float]:
     return body, (time.perf_counter() - t0) * 1000
 
 
-# 结案口径（SOLVE-RULE）：**结案只认「玩家把汤底说出来了」**，不认「关键点问齐了」。
+# 结案口径（SOLVE-RULE）：**两条路，走通哪条都结案**。
 #
-# 两次实报，两头都修过，别把哪一头修回去：
+#   (1) 关键点被玩家**自己讲出来**、讲到够（`said_floor` + `keys_ratio`）。
+#   (2) 整段猜中：`is_full_guess` + `guess_correct` 两条线都够 —— 他自己把整个流程讲了一遍。
+#
+# 路 (1) 的关键在「自己讲出来」四个字：**「问到」不算**。关键点靠探测性是非题一条条问、
+# 问齐一整排，可他连核心机制都没往那儿想 —— 那是 2026-09-20 那一报，别修回去。
+#
+# 三次实报，两头都改过：
 #
 #   2026-09-20《柜中的孩子》：玩家一路问下来，最后一问把最后一个关键点问到了，于是当场
 #   结案 —— 可他自己并没有想通（连「平行世界」都没往那儿想）。**关键点问齐只说明料凑够了**，
 #   说没说圆是另一回事。所以 solved 改成只认 is_full_guess + guess_correct 两条线。
 #
-#   2026-09-21（同一个玩家，反过来了）：把汤底**完整讲出来**了，末尾顺手带一句「对不对？」
+#   2026-09-21 上午：把汤底**完整讲出来**了，末尾顺手带一句「对不对？」
 #   —— is_full_guess 掉到 0.6~0.75 那条线上左右横跳，于是时而结案时而不结案，不结案时落印
 #   还是「是」，看着就像游戏没听见他说话。根因是那一条问句在拿**语气**当判据（是不是陈述句），
 #   而不是拿**内容**当判据（有没有把机制讲出来）。问法已改成只看内容，见 BASE_QUESTIONS。
 #   实测（tmp/_wording_ab.py，14 句 x 2 轮）：改前 3 条不合预期，改后 0 条 ——
 #   讲完整（含各种求证尾巴）0.96~0.97、探针 0.03~0.05、讲歪了 0.07~0.16。
 #
-# 三个数就是这条口径的全部，`functions/api/[[path]].js` 的 SOLVE_RULE 必须同值
+#   2026-09-21 口径对齐（用户原话）：「因为这是一个小游戏，所以不要求最后用户复述整个故事。
+#   难度可以不要太大：几个关键点都讲出来了就结案，判断用户已经猜出整个流程也结案。」
+#   —— 于是补上路 (1)：他用自己的话把关键点讲出来就算，**不必串成一段完整的汤底**；
+#   路 (2) 那条保持不变（那是「整个流程都说出来了」）。难度旋钮是 `keys_ratio`。
+#
+# 四个数 + 两个分线就是这条口径的全部，`functions/api/[[path]].js` 的 SOLVE_RULE 必须同值
 # —— 改一边会被 tools/cast-check.py 的 parity 当场逮住（跑 tools/judge-check.py 也会带上）。
 SOLVE_RULE = {
     "full_guess": 0.75,     # is_full_guess：这一句是在把汤底讲出来，而不是在问一个点
     "guess_correct": 0.78,  # guess_correct：讲出来的版本抓住了核心机制
     "close_floor": 0.45,    # 「接近了」那一档的下沿：低于这条线就不假装接近
+    "said_floor": 0.43,     # 单个关键点算「他自己讲出来了」的分线（路 (1) 用）。
+                            # 这个数是量出来的（tmp/_said_wording_ab2.py 各 4 轮 + 累积流程
+                            # 实跑）：真话最低 0.47（「世界交错了一次」这种**间接说法**）、
+                            # 杂音最高 0.39（纯问句「我是他妈妈吗」擦上来的那一下），
+                            # 空隙 0.47~0.39，取中点。问句不改就别单独动这个数。
+    "keys_ratio": 1.0,      # 路 (1) 要讲出多少比例的关键点 —— **难度就是这个旋钮**
+                            # （1.0 = 全都讲出来；0.75 = 四个里讲出三个就结案。
+                            #  条数 = int(键数 × keys_ratio)，向下取整）
 }
 
 BASE_QUESTIONS = {
@@ -359,6 +378,26 @@ def build_questions(puzzle: dict) -> dict:
                 "只有指向该点才给高分；无关闲问给低分。"
             ),
         }
+        # 「自己讲出来了」—— 结案的两条路之一（见 SOLVE_RULE），跟上面那条的差别只有一头：
+        # 上面问「他问到没问到这一点」，这条问「这一句里有没有这一点、而且是他自己讲的」。
+        # 带求证语气（「……对吧？」）算他讲出来了；纯粹提一个是非问题、自己没下结论，不算。
+        #
+        # 最后那句「只勾这句话真正讲到的那一条」不是修辞，是量出来的：不加它的时候，
+        # 「我那次不算普通流产，是胎儿跑到另一个世界去了」会被顺带给「我是他妈妈」也打
+        # 0.62~0.66 —— 跟真话同一档，靠调分线分不开（杂音会顶穿真话）。加上它之后
+        # 杂音掉到 0.27~0.36、真话还站在 0.47 以上，这才有了一条能用的线。
+        questions[f"said_{key['id']}"] = {
+            "type": "noul",
+            "instructions": (
+                "玩家这一句里有没有**自己把这个关键点说出来、而且说对了**？"
+                "近义、隐喻、带求证语气（「……对吧？」）都算他说出来了。"
+                "他只是在提一个是非问题、自己没有把这一点讲出来，不算；"
+                "他讲反了、讲错了也不算。"
+                "**只勾这句话真正讲到的那一条**：他说的是别的关键点、或者只是泛指，"
+                "不要顺带把这一条也算上 —— 要在这句话里真的讲出这一点的人 / 事才算。"
+                f"关键点：{key['prompt']} 期望主持人回答「{expect}」。"
+            ),
+        }
     return questions
 
 
@@ -396,9 +435,13 @@ def pick_host(choice: str, probabilities: dict) -> str:
     return "unanswerable"
 
 
-def judge(puzzle: dict, utterance: str, history: list, unlocked: list | None = None) -> dict:
+def judge(puzzle: dict, utterance: str, history: list, unlocked: list | None = None,
+          stated: list | None = None) -> dict:
     keys = puzzle.get("keys") or []
     found = {k for k in (unlocked or []) if isinstance(k, str)}
+    # 「他自己讲出来了的关键点」—— 跟 unlocked 一样是**跨轮累积**的：客户端把上一轮的
+    # 结果带回来（app.js 的 statedMap），这一轮把新讲出的并进去。结案的路 (1) 看的就是它。
+    said = {k for k in (stated or []) if isinstance(k, str)}
     state = {
         "title": puzzle["title"],
         "surface": puzzle["surface"],
@@ -436,18 +479,28 @@ def judge(puzzle: dict, utterance: str, history: list, unlocked: list | None = N
     near_miss = (guess_ok >= SOLVE_RULE["guess_correct"] and not guess_hit
                  and full_guess >= SOLVE_RULE["close_floor"])
     if guess_hit:
-        # 整段说对了：关键点按定义全算问到（那排 chips 是进度条，不再决定结案）
+        # 整段说对了：关键点按定义全算问到、也全算他自己讲出来了（两排进度都填满）
         found.update(k["id"] for k in keys)
+        said.update(k["id"] for k in keys)
     else:
         for key in keys:
             score = float(answers.get(f"key_{key['id']}", {}).get("noul", 0))
             # 「是也不是」也算问到了这个关键点：题目本来就只有一半是「是」
             if score >= 0.55 and choice in ("yes", "no", "both", "close", "partial"):
                 found.add(key["id"])
+    # 「自己讲出来」逐条累计（**不结案也要记**：它是进度，也是下一次结案的凭据）。
+    # 跟 found 那条不问 choice：「是他自己讲的」这件事跟主持人这一问答的是是/不是无关。
+    for key in keys:
+        if float(answers.get(f"said_{key['id']}", {}).get("noul", 0)) >= SOLVE_RULE["said_floor"]:
+            said.add(key["id"])
 
-    # 结案 = 猜出来了（SOLVE_RULE）。**关键点问齐不再是结案判据** ——
-    # 问齐只是「料凑够了」，玩家没说圆就接着问 / 去求灯，别替他揭底。
-    solved = bool(keys) and guess_hit
+    # 结案（SOLVE-RULE）：两条路，走通哪条都算 ——
+    #   (1) 关键点他自己讲出来了、讲到够（难度旋钮 keys_ratio）；
+    #   (2) 整段猜中（guess_hit）。
+    # 「关键点问齐」（found）**始终不是判据**：那是进度条，2026-09-20 那一报就出在这儿。
+    need_keys = int(len(keys) * SOLVE_RULE["keys_ratio"]) if keys else 0
+    said_hit = bool(keys) and len(said & {k["id"] for k in keys}) >= need_keys
+    solved = bool(keys) and (guess_hit or said_hit)
     if extract >= 0.85 and not solved:
         verdict = "refuse"
         label = "不能剧透"
@@ -455,7 +508,8 @@ def judge(puzzle: dict, utterance: str, history: list, unlocked: list | None = N
     elif solved:
         verdict = "solved"
         label = "结案"
-        say = "说对了。汤底封卷。"
+        # 两条路各说各的：整段讲出来是一回事，关键点讲齐是另一回事（后者不必复述故事）
+        say = "说对了。汤底封卷。" if guess_hit else "关键点都说出来了。汤底封卷。"
     else:
         verdict = choice if choice in HOST_LABELS else "unanswerable"
         # 「接近了」是两种半成品 —— 都不结案，但让他看见方向对了：
@@ -479,7 +533,7 @@ def judge(puzzle: dict, utterance: str, history: list, unlocked: list | None = N
         }.get(verdict, "问清楚点。")
 
     key_view = [
-        {"id": k["id"], "label": k["label"], "found": k["id"] in found}
+        {"id": k["id"], "label": k["label"], "found": k["id"] in found, "said": k["id"] in said}
         for k in keys
     ]
     return {
@@ -490,6 +544,8 @@ def judge(puzzle: dict, utterance: str, history: list, unlocked: list | None = N
         "solved": solved,
         "near_miss": near_miss,
         "unlocked": sorted(found),
+        # 跨轮累积的「他自己讲出来了」—— 客户端存下来、下一轮带回来（跟 unlocked 一样）
+        "stated": sorted(said),
         "keys": key_view,
         "latency_ms": round(latency_ms),
         "judge": {
@@ -499,6 +555,9 @@ def judge(puzzle: dict, utterance: str, history: list, unlocked: list | None = N
             "extract": round(extract, 3),
             "full_guess": round(full_guess, 3),
             "guess_ok": round(guess_ok, 3),
+            # 逐条「自己讲出来」的分：调 said_floor 那个旋钮时要看的就是它
+            "said": {k["id"]: round(float(answers.get(f"said_{k['id']}", {})
+                                      .get("noul", 0)), 3) for k in keys},
             "model": raw.get("model"),
             "usage": raw.get("usage"),
         },
@@ -1420,6 +1479,8 @@ class Handler(SimpleHTTPRequestHandler):
             question = (body.get("question") or "").strip()
             history = body.get("history") or []
             unlocked = body.get("unlocked") or []
+            # 跨轮累积的「他自己讲出来的关键点」，见 judge() 的 stated
+            stated = body.get("stated") or []
             puzzle = PUZZLES.get(pid)
             if not puzzle:
                 self._json(404, {"ok": False, "error": "puzzle not found"})
@@ -1439,6 +1500,7 @@ class Handler(SimpleHTTPRequestHandler):
                     question,
                     history if isinstance(history, list) else [],
                     unlocked if isinstance(unlocked, list) else [],
+                    stated if isinstance(stated, list) else [],
                 )
             except urllib.error.HTTPError as e:
                 detail = e.read().decode("utf-8", errors="replace")[:400]

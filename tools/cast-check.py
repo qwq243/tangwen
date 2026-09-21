@@ -84,13 +84,16 @@ def check_parity(srv) -> list[str]:
          —— 只改一边，线上和本地就会对不同的问题给不同的印；
       2. **state 的字段顺序**：cast 排在哪一位是量出来的（见下面的 --order），
          两边顺序不一样等于两个模型。tools/cast.py 只管数据，管不到这个。
-      3. **结案口径（SOLVE-RULE）**：三个阈值同值，而且两边的 solved 判据都必须认
-         「猜中」那条线、都不许退回「关键点问齐就结案」。这条是 2026-09-20 用户实报
-         （关键点问齐就当场结案，玩家其实没想通）之后加的钉子；跑 tools/judge-check.py
-         会带上同一道检查。
-      4. **「讲对了却没结案」那一档**：判定与记账两边都要在。2026-09-21 用户实报
+      3. **结案口径（SOLVE-RULE）**：五个数同值，而且两边的 solved 判据都必须认
+         「猜中」与「关键点自己讲出来」这两条路、都不许退回「关键点问齐就结案」。
+         这条是 2026-09-20 用户实报（关键点问齐就当场结案，玩家其实没想通）之后加的钉子，
+         2026-09-21 又按「小游戏，不要求复述整个故事」补了 said 那条路；
+         跑 tools/judge-check.py 会带上同一道检查。
+      4. **「讲对了却没结案」那一档**：判定与记账两边都要在。2026-09-21 上午用户实报
          （讲完整了却不结案）之后加的：它是结案判据自己的故障灯，一边漏了就等于
          那条链路又变回静默。
+      5. **「自己讲出来」那组问句（said_）**：判题 payload 里两边都得有 ——
+         结案的路 (1) 全架在它上面，一边漏了那条路就只在一边生效。
     """
     js_path = ROOT / "functions" / "api" / "[[path]].js"
     src = js_path.read_text(encoding="utf-8")
@@ -148,6 +151,17 @@ def check_parity(srv) -> list[str]:
             errs.append(f"{name} 里没有「讲对了却没结案」那一档的判定（2026-09-21 加的）")
         if bump not in text:
             errs.append(f"{name} 没把「讲对了却没结案」记成 nearmiss（两条链路都要记）")
+
+    # 结案的路 (1)：`said_` 那组问句 + said_hit 那条判据，两边都得在
+    # —— 一边漏了，「关键点自己讲出来就结案」就只在一边生效（另一半玩家不受影响的神隐故障）。
+    for name, text, q, hit in (
+        ("server.py", py_src, "said_{key['id']}", "said_hit"),
+        ("functions", src, "said_${key.id}", "saidHit"),
+    ):
+        if q not in text:
+            errs.append(f"{name} 的判题 payload 里没有「自己讲出来」那组问句（said_）")
+        if hit not in text:
+            errs.append(f"{name} 的 solved 判据里没有「关键点自己讲出来」那条路（SOLVE-RULE 路 (1)）")
 
     def keys_of(text: str, start: str, stop: str) -> list[str]:
         i = text.find(start)
