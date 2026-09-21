@@ -83,4 +83,4 @@ suite 会白红一轮，报的却是界面症状。
 
 `puzzles.json` 的汤面汤底是抖音「许二木」的作品，著作权不在本项目。往里加题之前先想清楚
 来源；如果你打算把项目用于商业用途，建议把语料换成自己写的（格式见
-[docs/game-data.md](docs/game-data.md)）。详见 README 末尾。
+[docs/game-data.md](docs/game-data.md)）。完整说明见 [NOTICE](NOTICE)。

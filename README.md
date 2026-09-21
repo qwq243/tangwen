@@ -108,9 +108,10 @@ pack.py                    打部署包，含引用完整性校验
 代码是 MIT，随便用。
 
 **但 44 卷汤面汤底不是这个项目写的 —— 作者是抖音的「许二木」。** 语料取自他的
-「许二木海龟汤文字版」合集（在 B 站，id `rl999117`），著作权在他手里。放在仓库里是为了
-让项目开箱即用；你要商用或者大范围再分发，请自己确认授权，或者把 `puzzles.json` 换成
-你自己写的题 —— 格式很直白，见 [docs/game-data.md](docs/game-data.md)。汤色的分类口径
-另有一处出处，同一篇里写了。
+「许二木海龟汤文字版」合集（在 B 站，id `rl999117`），著作权在他手里，不在 MIT 的
+授权范围内。放在仓库里是为了让项目开箱即用；你要商用或者大范围再分发，请自己确认授权，
+或者把 `puzzles.json` 换成你自己写的题 —— 格式很直白，见
+[docs/game-data.md](docs/game-data.md)。汤色的分类口径另有一处出处，同一篇里写了。
 
-封面图是生图模型出的，提示词在 [`docs/design/prompts.jsonl`](docs/design/prompts.jsonl)。
+第三方内容的完整说明在 [NOTICE](NOTICE)；封面图是生图模型出的，提示词在
+[`docs/design/prompts.jsonl`](docs/design/prompts.jsonl)。

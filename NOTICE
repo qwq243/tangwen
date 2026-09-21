@@ -1,0 +1,26 @@
+# 第三方内容
+
+`LICENSE` 里的 MIT 只覆盖代码。仓库里有一样东西不是本项目写的。
+
+## `puzzles.json` 的汤面与汤底
+
+**44 卷海龟汤的作者是抖音的「许二木」。** 著作权在他手里，不在 MIT 的授权范围内。
+
+语料整理自他的「许二木海龟汤文字版」合集（在 B 站，id `rl999117`）—— 那是文字版的
+抓取入口，不是原始出处。每卷的 `facts` / `keys` / `metaphor_map` / `cast` 是本项目
+为了让模型判题和判进度而补的标注，那部分随代码一起走 MIT。
+
+把语料放进仓库是为了让项目开箱即用。**你要商用或者大范围再分发，请自己确认授权**，
+或者把 `puzzles.json` 换成你自己写的题 —— 格式见
+[`docs/game-data.md`](docs/game-data.md)。汤色分类的口径另有一处出处，同一篇里写了。
+
+## 封面图
+
+`web/images/` 下的封面由生图模型生成，提示词在
+[`docs/design/prompts.jsonl`](docs/design/prompts.jsonl)，风格要求见
+[`docs/design/image-style-guide.md`](docs/design/image-style-guide.md)。
+
+## 依赖
+
+服务端只用 Python 标准库，前端零依赖，所以没有第三方代码需要转述。
+`package.json` 里唯一一个 devDependency 是 `wrangler`（部署用，MIT）。
