@@ -1,9 +1,21 @@
 {
+  // Cloudflare Pages 项目名。**部署前改成你自己的** —— 它同时决定线上域名
+  // （<name>.pages.dev）和 `wrangler pages deploy --project-name <name>` 的目标。
   "name": "tangwen",
   "compatibility_date": "2026-09-01",
   "pages_build_output_dir": "web",
+
+  // 排行榜 / 结案人数 / 埋点都在这一个 KV 命名空间里（绑定名 BOARD）。
+  // 下面这个 id 是本项目自己的命名空间 —— **你部署自己的副本时要换成你的**：
+  //     npx wrangler kv namespace create BOARD
+  // 拿到的 id 填进来（或者建完 Pages 项目后在面板里加绑定，效果一样）。
+  // 命名空间 id 不是凭据，拿它读写 KV 还需要账号权限，所以放仓库里是惯例做法。
   "kv_namespaces": [
     { "binding": "BOARD", "id": "5541f5c535b9456caf3bf4783291f281" }
   ],
+
+  // 求灯（AI 提示）走 Workers AI，绑定名**必须**是 AI ——
+  // functions/api/[[path]].js 里按 env.AI 取它，改名等于关掉求灯。
+  // 没绑也不报错，只是每次回兜底句（/api/health 的 hint 会是 false）。
   "ai": { "binding": "AI" }
 }

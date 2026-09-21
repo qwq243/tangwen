@@ -27,8 +27,17 @@ WEB = ROOT / "web"
 DATA = Path(os.environ.get("DATA_DIR") or (ROOT / "data"))
 PUZZLES_PATH = ROOT / "puzzles.json"
 BOARD_PATH = DATA / "board.json"
-TYPESAFE_URL = "https://api.typesafe.ai/v1/systemone"
-SKILL_ENV = Path.home() / ".codex" / "skills" / "typesafe-ai" / ".env"
+TYPESAFE_URL = os.environ.get("TYPESAFE_URL", "https://api.typesafe.ai/v1/systemone")
+# 密钥从哪儿读：环境变量优先，其次一个 .env 文件。
+# 默认读项目根目录的 .env（已被 .gitignore 挡住），要放别处就设 TYPESAFE_ENV_FILE。
+ENV_FILE = Path(os.environ.get("TYPESAFE_ENV_FILE") or (ROOT / ".env"))
+
+# 判题后端。
+#   typesafe（默认）—— 真的调 TypeSafe，要密钥，十档印才有准头；
+#   offline        —— 离线替身，不要密钥、不联网，只够把流程跑通（判得不准）。
+# 替身的存在意义是「让新来的开发者不必先搞到密钥就能把游戏跑起来」，
+# 它**不是**判题的第二种实现，口径回归一律以真模型为准。见 dev_typesafe()。
+JUDGE_MODE = os.environ.get("JUDGE_MODE", "typesafe").strip().lower() or "typesafe"
 
 # 判题（是 / 不是 / 是也不是 这十档印）固定用 TypeSafe 的 `jev-latest`。
 # **不设备胎、不许被环境变量顶掉** —— 十档的准头全靠它：`pick_host` 里那几条阈值
@@ -68,7 +77,7 @@ def load_dotenv(path: Path) -> None:
         os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
 
 
-load_dotenv(SKILL_ENV)
+load_dotenv(ENV_FILE)
 TYPESAFE_KEY = os.environ.get("TYPESAFE_API_KEY", "")
 DATA.mkdir(exist_ok=True)
 
@@ -79,10 +88,12 @@ DATA.mkdir(exist_ok=True)
 #   - 线上（functions/api/[[path]].js）走 env.AI binding；
 #   - 本地走 REST /ai/run/{model}，凭据复用 wrangler 登录留下的 OAuth token，
 #     过期了用 refresh_token 自动续（续完写回 toml，wrangler 那边也不用重新登录）。
-# 旧方案（netcup 网关的 glm-5.3-flash）同日拆除：那网关把 flash 路由到带深度
+# 旧方案（第三方网关的 glm-5.3-flash）同日拆除：那网关把 flash 路由到带深度
 # 思考的后端，回 30 字提示要先吐一千多字英文 reasoning，单次 27~60s，
 # 12s 超时下「求灯永远回兜底句」；语音听写润色（/api/refine）一并移除。
-CF_ACCOUNT_ID = os.environ.get("CF_ACCOUNT_ID", "").strip() or "f69671d00b6e139e4b7977ca5cd17758"
+# Workers AI 的 REST 地址里带账号 id。**没有默认值** —— 它跟具体账号绑定，
+# 不该写进仓库。设 CF_ACCOUNT_ID，或者走 wrangler 登录让 cf_account_id() 自己去问。
+CF_ACCOUNT_ID = os.environ.get("CF_ACCOUNT_ID", "").strip()
 CF_API_TOKEN = os.environ.get("CF_API_TOKEN", "").strip()  # 服务器部署可放一个静态 API Token，优先于 wrangler 登录
 WRANGLER_TOML = Path(
     os.environ.get("WRANGLER_CONFIG", "")
@@ -93,6 +104,7 @@ _CF_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124.0 Safari/537.36"
 _CF_CLIENT_ID = "54d11594-84e4-41aa-b438-e81b8fa78ee7"  # wrangler CLI 内置的公共 OAuth client_id
 _cf_lock = threading.Lock()
 _cf_state = {"access": "", "expires": 0.0}  # expires 是 time.time() 口径的绝对过期时刻
+_account_state = {"id": ""}                 # cf_account_id() 问出来的账号 id，只问一次
 
 
 def _toml_expiry(text: str) -> float:
@@ -188,6 +200,35 @@ def cf_ai_available() -> bool:
         return False
     return bool(re.search(r'refresh_token\s*=\s*"[^"]+"', text))
 
+
+def cf_account_id() -> str:
+    """Workers AI 要用的账号 id：CF_ACCOUNT_ID 优先，没设就问一次 API。
+
+    走 wrangler 登录那条路的人多半不知道自己账号 id 是什么，而凭据就在手上 ——
+    直接问 Cloudflare 要账号列表取第一个。一个进程只问一次，结果缓存在内存。
+    """
+    if CF_ACCOUNT_ID:
+        return CF_ACCOUNT_ID
+    if _account_state["id"]:
+        return _account_state["id"]
+    token = cf_ai_token()
+    if not token:
+        return ""
+    req = urllib.request.Request(
+        "https://api.cloudflare.com/client/v4/accounts",
+        headers={"Authorization": "Bearer " + token, "User-Agent": _CF_UA},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            body = json.loads(resp.read().decode("utf-8", "replace"))
+    except (urllib.error.HTTPError, OSError, ValueError):
+        return ""
+    for item in (body.get("result") or []):
+        if isinstance(item, dict) and item.get("id"):
+            _account_state["id"] = str(item["id"])
+            return _account_state["id"]
+    return ""
+
 with PUZZLES_PATH.open(encoding="utf-8") as f:
     BUNDLE = json.load(f)
 PUZZLES = {p["id"]: p for p in BUNDLE["puzzles"]}
@@ -238,6 +279,108 @@ def typesafe(state: dict, questions: dict) -> tuple[dict, float]:
     return body, (time.perf_counter() - t0) * 1000
 
 
+# ================= 离线判题替身（JUDGE_MODE=offline） =================
+#
+# 目的只有一个：**让新来的开发者不必先搞到 TypeSafe 密钥，就能把游戏整个跑起来** ——
+# 提问落印、关键点解锁、结案、上排行榜、进后台，全流程都能走。
+#
+# 它是一把「字面重合度」的粗尺子，**判得不准**，而且永远不能当成判题口径的一部分：
+# 十档印的准头全在 jev-latest 那颗模型的概率分布上（`pick_host` 那几条阈值就是照它量的），
+# 换用它等于换一套口径。所以：
+#   - 默认关着（JUDGE_MODE 缺省是 typesafe），要用得自己开；
+#   - 判题口径的回归（tools/judge-check.py / cast-check.py）一律打真模型，不认它；
+#   - `/api/health` 里 `judge_mode` 会自报家门，免得线上糊里糊涂跑着替身还没人发现。
+
+_BIGRAM_STRIP = re.compile(r"[^\w\u4e00-\u9fff]+")
+KEY_PROMPT_RE = re.compile(r"关键点：(.+?)\s*期望主持人回答")
+
+
+def _bigrams(text: str) -> set[str]:
+    """二元字组。中文没有词边界，粗比「像不像」用它够用（这是替身，不是判题）。"""
+    s = _BIGRAM_STRIP.sub("", str(text or ""))
+    return {s[i:i + 2] for i in range(len(s) - 1)}
+
+
+def _cover(target: str, text: str) -> float:
+    """target 有多大比例被 text 覆盖（0~1）。分母是 target，所以短问句盖不满长汤底。"""
+    gt, gx = _bigrams(target), _bigrams(text)
+    if not gt:
+        return 0.0
+    return len(gt & gx) / len(gt)
+
+
+def _key_prompts(questions: dict) -> dict[str, str]:
+    """从 build_questions 拼好的说明里把关键点原文捞回来 —— 替身拿不到 puzzle，只能这么取。
+
+    `key_<id>` 与 `said_<id>` 的说明都是本项目自己拼的，格式固定在一处（build_questions），
+    改那边的措辞时这里会一起失效（表现为替身一条关键点都认不出来），不是静默的。
+    """
+    out: dict[str, str] = {}
+    for qid, spec in (questions or {}).items():
+        m = KEY_PROMPT_RE.search(str((spec or {}).get("instructions") or ""))
+        if m:
+            out[qid] = m.group(1)
+    return out
+
+
+def dev_typesafe(state: dict, questions: dict) -> tuple[dict, float]:
+    """离线替身：把玩家这句话跟汤底 / 关键点原文比字面重合度，据此编一组答案。
+
+    能跑通的路：把汤底正着讲一遍 -> 结案（路 2）；问到某个关键点的说法 -> 解锁那一格。
+    做不到的：分时点 / 分对象 / 是也不是、近义与隐喻、身份题的分层 —— 这些都要真模型。
+    """
+    utt = str(state.get("player_utterance") or "")
+    bottom = str(state.get("bottom") or "")
+    # 汤底被覆盖了多少 —— 「他是不是把整个故事讲出来了」在替身眼里就这一个数
+    to_bottom = _cover(bottom, utt)
+
+    answers: dict[str, dict] = {
+        "trying_to_extract": {
+            "noul": 1.0 if re.search(r"汤底|完整答案|直接告诉我|别问了|公布", utt) else 0.0
+        },
+        "is_full_guess": {"noul": round(to_bottom, 3)},
+        "guess_correct": {"noul": round(to_bottom, 3)},
+    }
+
+    prompts = _key_prompts(questions)
+    key_hit = False
+    for qid, prompt in prompts.items():
+        if not qid.startswith("key_"):
+            continue
+        if _cover(prompt, utt) >= 0.5:
+            key_hit = True
+        answers[qid] = {"noul": 0.9 if _cover(prompt, utt) >= 0.5 else 0.0}
+    for qid, prompt in prompts.items():
+        if not qid.startswith("said_"):
+            continue
+        # 「他自己讲出来」比「问到」严一档：既要说中这一点，又不能是一句短问句
+        # （真模型是按内容和语气分层判的，替身只做得到「够长 + 说中了」）
+        said = _cover(prompt, utt) >= 0.5 and len(utt) >= 12
+        answers[qid] = {"noul": 0.9 if said else 0.0}
+
+    # 主持人这一问：说中关键点、或者跟汤底有重合，就当「是」；否则落软档。
+    # 概率值只为了让 pick_host 走到想要的档，不假装是模型的分布。
+    hit = key_hit or to_bottom >= 0.35
+    answers["host_answer"] = {
+        "choice": "yes" if hit else "unimportant",
+        "probabilities": (
+            {"yes": 0.7, "no": 0.1, "both": 0.0, "partial": 0.0,
+             "close": 0.0, "irrelevant": 0.05, "unimportant": 0.05, "unanswerable": 0.0}
+            if hit else
+            {"yes": 0.05, "no": 0.05, "both": 0.0, "partial": 0.0,
+             "close": 0.0, "irrelevant": 0.05, "unimportant": 0.6, "unanswerable": 0.0}
+        ),
+        "confidence": 0.5,
+    }
+    return {"answers": answers}, 0.0
+
+
+if JUDGE_MODE in ("offline", "dev", "mock"):
+    # judge() 在调用时才查这个名字，所以在这里换掉整个后端就够了，判题流程一行不动。
+    # tools/judge-check.py / cast-check.py 也是靠 srv.typesafe = 桩 这条路换后端，同一个口子。
+    typesafe = dev_typesafe
+
+
 # 结案口径（SOLVE-RULE）：**两条路，走通哪条都结案**。
 #
 #   (1) 关键点被玩家**自己讲出来**、讲到够（`said_floor` + `keys_ratio`）。
@@ -256,7 +399,7 @@ def typesafe(state: dict, questions: dict) -> tuple[dict, float]:
 #   —— is_full_guess 掉到 0.6~0.75 那条线上左右横跳，于是时而结案时而不结案，不结案时落印
 #   还是「是」，看着就像游戏没听见他说话。根因是那一条问句在拿**语气**当判据（是不是陈述句），
 #   而不是拿**内容**当判据（有没有把机制讲出来）。问法已改成只看内容，见 BASE_QUESTIONS。
-#   实测（tmp/_wording_ab.py，14 句 x 2 轮）：改前 3 条不合预期，改后 0 条 ——
+#   实测（14 句 x 2 轮）：改前 3 条不合预期，改后 0 条 ——
 #   讲完整（含各种求证尾巴）0.96~0.97、探针 0.03~0.05、讲歪了 0.07~0.16。
 #
 #   2026-09-21 口径对齐（用户原话）：「因为这是一个小游戏，所以不要求最后用户复述整个故事。
@@ -271,8 +414,8 @@ SOLVE_RULE = {
     "guess_correct": 0.78,  # guess_correct：讲出来的版本抓住了核心机制
     "close_floor": 0.45,    # 「接近了」那一档的下沿：低于这条线就不假装接近
     "said_floor": 0.43,     # 单个关键点算「他自己讲出来了」的分线（路 (1) 用）。
-                            # 这个数是量出来的（tmp/_said_wording_ab2.py 各 4 轮 + 累积流程
-                            # 实跑）：真话最低 0.47（「世界交错了一次」这种**间接说法**）、
+                            # 这个数是量出来的（各 4 轮 + 累积流程实跑）：
+                            # 真话最低 0.47（「世界交错了一次」这种**间接说法**）、
                             # 杂音最高 0.39（纯问句「我是他妈妈吗」擦上来的那一下），
                             # 空隙 0.47~0.39，取中点。问句不改就别单独动这个数。
     "keys_ratio": 1.0,      # 路 (1) 要讲出多少比例的关键点 —— **难度就是这个旋钮**
@@ -456,7 +599,7 @@ def judge(puzzle: dict, utterance: str, history: list, unlocked: list | None = N
         #
         # **它必须排在最后**，这不是排版洁癖：《怀孕》的「怀孕的是爱人吗」在
         # 「cast 放在 facts 后面」时稳定答「是」（y .52–.58），放到末尾后稳定答
-        # 「不是」（n .63–.73）—— 交错 4 轮、4:4，见 tmp/_order_ab.py。
+        # 「不是」（n .63–.73）—— 交错 4 轮、4:4。
         # 身份题两种顺序都满分（tools/cast-check.py 18/18），所以按事件题这半边定。
         "cast": puzzle.get("cast") or [],
     }
@@ -737,7 +880,7 @@ def leaks_bottom(text: str, bottom: str) -> bool:
 
 # 求灯的模型链，与 functions/api/[[path]].js 的 HINT_MODELS 1:1：
 # 第一个是主力，出错 / 抠不出正文 / 撞泄底闸就依次往下退。
-# 实测数据（tmp/_o_aisweep.txt）：70b-fp8-fast 中文最稳、1~2s、每次都出正文；
+# 实测数据：70b-fp8-fast 中文最稳、1~2s、每次都出正文；
 # 8b 会偶尔把「同桌」直接写出来；mistral 中文最利落。
 HINT_MODELS = [
     "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
@@ -754,7 +897,10 @@ HINT_SYSTEM = (
 
 def cf_ai_run(model: str, messages: list, timeout_s: float = 20.0) -> dict:
     """跑一次 Workers AI（REST）。OAuth token 过期（401）会自动续一次再试。"""
-    url = f"https://api.cloudflare.com/client/v4/accounts/{CF_ACCOUNT_ID}/ai/run/{model}"
+    account = cf_account_id()
+    if not account:
+        raise RuntimeError("拿不到 Cloudflare 账号 id：设 CF_ACCOUNT_ID，或跑一次 npx wrangler login")
+    url = f"https://api.cloudflare.com/client/v4/accounts/{account}/ai/run/{model}"
     body = json.dumps({"messages": messages, "max_tokens": 80, "temperature": 0.4},
                       ensure_ascii=False).encode("utf-8")
     for _ in range(2):
@@ -1315,6 +1461,9 @@ class Handler(SimpleHTTPRequestHandler):
                     "hint_fallbacks": len(HINT_MODELS),
                     # 判题模型：不设备胎、不许被变量顶掉，这里报的永远是那个唯一解
                     "judge_model": TYPESAFE_MODEL,
+                    # 判题后端是不是替身。**线上看到 offline 就是配错了** ——
+                    # 替身判得不准，只该出现在本机开发时（见 dev_typesafe）。
+                    "judge_mode": JUDGE_MODE,
                     "stats": True,
                     "admin": bool(ADMIN_KEY),
                 },
@@ -1623,7 +1772,11 @@ def main() -> None:
     # flush=True：这几行是「起没起来、密钥读到没」的唯一线索，
     # 输出重定向到文件时（后台起服务）不加它就一个字都看不到
     print(f"turtle-soup demo http://{host}:{port}/", flush=True)
-    print(f"typesafe key loaded: {bool(TYPESAFE_KEY)}  judge model: {TYPESAFE_MODEL}", flush=True)
+    print(f"judge: {JUDGE_MODE}  typesafe key loaded: {bool(TYPESAFE_KEY)}  model: {TYPESAFE_MODEL}",
+          flush=True)
+    if JUDGE_MODE in ("offline", "dev", "mock"):
+        print("  ⚠ 判题走的是离线替身（判得不准，只够把流程跑通）。"
+              "要真判题就去掉 JUDGE_MODE=offline 并配 TYPESAFE_API_KEY。", flush=True)
     print(f"hint: Workers AI（免费额度）{HINT_MODELS[0]} 可用={cf_ai_available()}", flush=True)
     print(f"http: {Handler.protocol_version} keep-alive · 文本类 gzip · backlog {Server.request_queue_size}", flush=True)
     print("stt: browser-side SpeechRecognition (no server model)", flush=True)

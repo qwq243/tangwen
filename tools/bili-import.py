@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """从 B 站专栏合集把海龟汤抓下来，拆成一条条，再跟已有卷宗去重。
 
-**这批卷宗的出处**：B 站「许二木海龟汤文字版」，合集 `rl999117`（一周三更）。
+**这批卷宗的作者是抖音的「许二木」**。抓的是「许二木海龟汤文字版」合集
+（在 B 站，`rl999117`，一周三更）—— 那是文字版的入口，不是原始出处。
 现有的 44 卷全部来自这个合集 —— 加新卷就是从它继续往回捞。
 
 三步，`--step` 分开跑也行，默认一次跑完：
@@ -34,7 +35,8 @@
     #      （汤底有性别名词、或干净的他 / 她才写男 / 女，其余写「未写明」），
     #      再 python tools/cast.py --write
     #   4. 写提示词 -> python generate_covers.py <name.png> -> python make_webp.py <name.png>
-    #   5. python tmp/_judge_probe.py <id>          # 打真接口确认判得动
+    #   5. 打真接口确认判得动 —— 这一条别省，schema 全对跟「判得动」是两回事
+    #      （页面上问几句即可；阈值那一层用 python tools/judge-check.py --live）
     #      python tools/cast-check.py --ids <id>    # 身份题也过一遍
     #   6. python tools/suite.py                    # 全套界面自查
     #   7. 同步 functions/puzzles.json 后部署（tools/cast.py --write 顺手就同步了）

@@ -12,9 +12,9 @@
 
 顺带量一个实现细节：`state` 的字段顺序真的会改判题结果 —— 同一份 state 只在
 cast 的位置上不同（facts 后面 vs 末尾），《怀孕》的「怀孕的是爱人吗」一边稳定
-答「是」一边稳定答「不是」（交错 4 轮 4:4，见 tmp/_order_ab.py）。所以这里把
+答「是」一边稳定答「不是」（交错 4 轮 4:4）。所以这里把
 顺序做成参数（--order last|mid），**默认 last 就是线上口径**（server.py 与
-functions 里 cast 都排在末尾）。
+functions 里 cast 都排在末尾）。想复现那次交错，`--order mid` 跑两轮对比即可。
 
 用法：
     python tools/cast-check.py                 # 全库，两个方向都问

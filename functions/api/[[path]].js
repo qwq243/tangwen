@@ -227,7 +227,7 @@ async function judge(env, puzzle, utterance, history, unlocked, stated) {
 
          **它必须排在最后**：《怀孕》的「怀孕的是爱人吗」在「cast 放在 facts 后面」时
          稳定答「是」（y .52–.58），放到末尾后稳定答「不是」（n .63–.73）—— 交错 4 轮、
-         4:4，见 tmp/_order_ab.py。身份题两种顺序都满分（tools/cast-check.py 18/18），
+         4:4。身份题两种顺序都满分（tools/cast-check.py 18/18），
          所以按事件题这半边定。跟 server.py 的 judge() 必须保持同一个顺序。 */
       cast: puzzle.cast || [],
     },
@@ -514,7 +514,7 @@ function fallbackHint() {
    早在 5 月 30 号就下线了，binding 报 5028，可线上表现只是「求灯永远回同一句
    兜底」，看不出错。**模型名写死一个就是等着重演**，所以这里写成一条链。
 
-   实测数据（tmp/_o_aisweep.txt、tmp/_o_ainurons.txt，同一段 prompt 4 个汤）：
+   实测数据（同一段 prompt 4 个汤）：
      70b-fp8-fast    1.2~1.7s  9.86 神经元/次  ≈1014 次/天  每次都出正文，中文最稳，从没超 40 字
      8b-instruct-fp8 1.5~2.1s  3.77 神经元/次  ≈2651 次/天  一次超到 42 字、一次把「同桌」直接写出来
      mistral-small   1.1~1.5s  8.88 神经元/次  ≈1127 次/天  中文最利落（「她并不是唯一的幸存者。」）
