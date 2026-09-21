@@ -33,12 +33,15 @@ const SOFT_RESCUE_MIN = 0.3; // 软档（不重要 / 无关）的绝对分量线
 const SOFT_RESCUE_RATIO = 0.6; // 软档还得追到 unanswerable 的六成，免得乱码顺带的那点分量把它撬走
 
 /* 结案口径（SOLVE-RULE）：**结案只认「玩家把汤底说出来了」**，不认「关键点问齐了」。
-   为什么改、三个数各是什么，见 server.py 同名常量上的那段注释 —— 两边必须同值，
-   改一边会被 tools/cast-check.py 的 parity 当场逮住。 */
+   两次实报、两头都修过，「为什么」的正文在 server.py 同名常量上面 —— 那边是本账，
+   这边留结论：2026-09-20 修的是「关键点问齐就当场结案」（玩家没想通也被结案）；
+   2026-09-21 修的是「讲完整了却不结案」（is_full_guess 拿语气当判据，一句「对不对？」
+   就把它打到线下）。三个数两边必须同值，改一边会被 tools/cast-check.py 的 parity
+   当场逮住（跑 tools/judge-check.py 也会带上）。 */
 const SOLVE_RULE = {
   full_guess: 0.75,     // is_full_guess：这一句是在把汤底讲出来，而不是在问一个点
   guess_correct: 0.78,  // guess_correct：讲出来的版本抓住了核心机制
-  close_floor: 0.45,    // 整段猜过但没说到点子上：低于这条线就不假装「接近了」
+  close_floor: 0.45,    // 「接近了」那一档的下沿：低于这条线就不假装接近
 };
 
 const BASE_QUESTIONS = {
@@ -48,7 +51,7 @@ const BASE_QUESTIONS = {
   },
   is_full_guess: {
     type: "noul",
-    instructions: "玩家是在把整个汤底 / 核心机制**讲出来**（陈述，不是在问），而不是在问一个探测性是非题？自己的推理串成一段话、或一句话点破核心机制都算。",
+    instructions: "玩家这一句里有没有把**整个汤底 / 核心机制讲出来**？判断**只看内容，不看语气**：把来龙去脉串成一段话说出来就算讲出来了，末尾带一句「对吗 / 对不对 / 我猜得对吗」这类求证套话不影响判定，通篇都是问句、但机制其实已经完整交代了，也算。不算的只有一种：**只问一个点、能用是 / 不是回答**的探针问题 —— 哪怕它问的正是关键点，也不算讲出汤底。",
   },
   guess_correct: {
     type: "noul",
@@ -216,6 +219,12 @@ async function judge(env, puzzle, utterance, history, unlocked) {
 
   const guessHit =
     fullGuess >= SOLVE_RULE.full_guess && guessOk >= SOLVE_RULE.guess_correct;
+  /* 「讲对了却没结案」= 机制抓住了（guessOk 够线），这一句却没被当成整段汤底
+     （fullGuess 不够线）。修好问法之后这一档**应该永远是 0**：它一涨就说明结案判据
+     又在拿语气 / 措辞当判据（2026-09-21 那一报就是这个形状），账房记一笔 nearmiss。
+     与 server.py 的 judge() 同名量。 */
+  const nearMiss =
+    guessOk >= SOLVE_RULE.guess_correct && !guessHit && fullGuess >= SOLVE_RULE.close_floor;
   if (guessHit) {
     // 整段说对了：关键点按定义全算问到（那排 chips 是进度条，不再决定结案）
     for (const k of keys) found.add(k.id);
@@ -245,9 +254,12 @@ async function judge(env, puzzle, utterance, history, unlocked) {
     say = "说对了。汤底封卷。";
   } else {
     verdict = choice in HOST_LABELS ? choice : "unanswerable";
-    // 整段猜过、但没说到点子上：落「接近了」比落「是 / 不是」贴切 ——
-    // 玩家讲的是故事，不是一个是非命题。差得太远（低于 close_floor）就不假装接近。
-    if (fullGuess >= SOLVE_RULE.full_guess && guessOk >= SOLVE_RULE.close_floor) {
+    // 「接近了」是两种半成品 —— 都不结案，但让他看见方向对了：
+    //   (1) 机制说对了、只是没当成整段汤底讲（就是上面那一档 nearMiss）；
+    //   (2) 整段讲了、但机制没说准。
+    // 两条都要求 fullGuess 不低于 close_floor：探针的 fullGuess 只有 0.03~0.08，
+    // 哪怕某一问的 guessOk 蹿上来（实测探针最高 0.75），也落不进这一档。
+    if (nearMiss || (fullGuess >= SOLVE_RULE.full_guess && guessOk >= SOLVE_RULE.close_floor)) {
       verdict = "close";
     }
     label = HOST_LABELS[verdict] || HOST_LABELS.unanswerable;
@@ -269,6 +281,7 @@ async function judge(env, puzzle, utterance, history, unlocked) {
     say,
     verdict,
     solved,
+    near_miss: nearMiss,
     unlocked: [...found].sort(),
     keys: keys.map((k) => ({ id: k.id, label: k.label, found: found.has(k.id) })),
     latency_ms: Math.round(latencyMs),
@@ -586,7 +599,7 @@ async function makeHint(env, puzzle, history, unlocked, prev) {
    偏偏访问量还在涨（2026-09-20 实况：pv=67 uv=22 ask=0）—— 看起来像后台坏了。
    服务端看得见的事就别外包给前端。 */
 const TRACK_CLIENT_KINDS = ["pv"];              // 客户端还能报的
-const BUMP_KINDS = ["ask", "hint", "solve", "give", "judgefail"];   // 服务端自己数的
+const BUMP_KINDS = ["ask", "hint", "solve", "give", "judgefail", "nearmiss"];   // 服务端自己数的
 const BUMP_PUZZLE_KINDS = ["ask", "hint", "solve"];    // 其中要记到分卷明细的
 const TRACK_MAX_EVENTS = 240;          // 一次请求最多认这么多条，防着有人拿它刷
 const SEEN_TTL = 60 * 24 * 60 * 60;    // 60 天
@@ -795,14 +808,14 @@ async function collectStats(env, days) {
   const dates = [];
   for (let i = days - 1; i >= 0; i--) dates.push(shanghaiDate(-i));
   const raws = await Promise.all(dates.map((d) => readJsonKey(env, "st:d:" + d)));
-  /* judgefail（判题调用失败）与 hintfallback（求灯退到兜底）跟别的计数一样按天走，
-     给后台「模型调用」那张卡与折线用。day.m（按模型的求灯次数）不进 series ——
-     它是「谁答的」的分解，没有按天的趋势可言，单独聚合成 models。
+  /* judgefail（判题调用失败）、hintfallback（求灯退到兜底）、nearmiss（讲对了却没结案）
+     跟别的计数一样按天走，给后台「模型调用」那张卡与折线用。day.m（按模型的求灯次数）
+     不进 series —— 它是「谁答的」的分解，没有按天的趋势可言，单独聚合成 models。
      口径与 server.py 的 collect_stats 1:1。 */
   const series = dates.map((date, i) => {
     const c = (raws[i] && raws[i].c) || {};
     const row = { date };
-    for (const k of ["pv", "uv", "new", "ask", "hint", "solve", "give", "judgefail", "hintfallback"]) {
+    for (const k of ["pv", "uv", "new", "ask", "hint", "solve", "give", "judgefail", "hintfallback", "nearmiss"]) {
       row[k] = Number(c[k] || 0) || 0;
     }
     return row;
@@ -822,6 +835,7 @@ async function collectStats(env, days) {
   });
   const totals = {
     pv: 0, uv: 0, new: 0, ask: 0, hint: 0, solve: 0, give: 0, judgefail: 0, hintfallback: 0,
+    nearmiss: 0,
   };
   series.forEach((r) => {
     Object.keys(totals).forEach((k) => {
@@ -1018,6 +1032,9 @@ export async function onRequest(context) {
     try {
       const result = await judge(env, puzzle, question, history, unlocked);
       if (result.solved) context.waitUntil(bumpTrack(env, "solve", pid).catch(() => {}));
+      // 讲对了却没结案：这一档**不该有**（理由见 SOLVE_RULE 与 judge() 的注释）。
+      // 记它是为了它再出现时后台看得见 —— 不用再靠玩家报「我明明答出来了」。
+      else if (result.near_miss) context.waitUntil(bumpTrack(env, "nearmiss", pid).catch(() => {}));
       return json(result);
     } catch (e) {
       // 判题调用失败单独记一笔：ask 是「玩家问了几次」，judgefail 是「模型调用挂了几次」

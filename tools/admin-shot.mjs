@@ -65,7 +65,7 @@ const PROBE = `(function(){
     hover: hovered,
     puzRows: q('#puzTable') ? q('#puzTable').querySelectorAll('tbody tr').length : -1,
     dayRows: q('#dayTable') ? q('#dayTable').querySelectorAll('tbody tr').length : -1,
-    // 模型调用那张卡：四格（判题 / 判题失败 / 求灯 / 求灯兜底）+ 口径一行 + 模型表
+    // 模型调用那张卡：五格（判题 / 判题失败 / 讲对了没结案 / 求灯 / 求灯兜底）+ 口径一行 + 模型表
     modTiles: q('#mods') ? [].slice.call(q('#mods').querySelectorAll('.mod')).map(function(e){
       return { k: (e.querySelector('.k')||{}).textContent || '', v: (e.querySelector('.v')||{}).textContent || '' }; }) : [],
     modNote: (q('#modNote')||{}).textContent || '',
@@ -168,8 +168,9 @@ async function run(v) {
       JSON.stringify(out.hover));
     ok(`${v.label} 分卷表有行`, out.puzRows > 0, `rows=${out.puzRows}`);
     ok(`${v.label} 近 7 日明细 7 行`, out.dayRows === 7, `rows=${out.dayRows}`);
-    ok(`${v.label} 模型调用四格都在（判题 / 判题失败 / 求灯 / 求灯兜底）`,
-      out.modTiles.length === 4 && out.modTiles.every((t) => t.k && t.v !== ''),
+    ok(`${v.label} 模型调用五格都在（判题 / 判题失败 / 讲对了没结案 / 求灯 / 求灯兜底）`,
+      out.modTiles.length === 5 && out.modTiles.every((t) => t.k && t.v !== '')
+      && out.modTiles.some((t) => /讲对了没结案/.test(t.k)),
       JSON.stringify(out.modTiles));
     ok(`${v.label} 模型调用带口径一行`, /判题/.test(out.modNote) && /求灯/.test(out.modNote),
       out.modNote.slice(0, 60));

@@ -112,9 +112,11 @@
     <b>数据口径</b>　日期按 Asia/Shanghai 切。访问＝首页开卷成功一次；访客按浏览器本地随机 uid 去重；
     新增＝该 uid 第一次出现。提问 / 求灯 / 结案都按卷记一次。<br />
     <b>模型调用</b>　判题＝TypeSafe 一次提问一次调用（<span class="mono">ask</span>，失败另记
-    <span class="mono">judgefail</span>）；求灯＝Workers AI 免费额度，按「这句是谁答的」分开记
+    <span class="mono">judgefail</span>，「机制说对了却没结案」另记 <span class="mono">nearmiss</span>
+    —— 那一档应当恒为 0，涨了就是结案判据的故障）；求灯＝Workers AI 免费额度，按「这句是谁答的」分开记
     （<span class="mono">day.m</span>），链上全挂回兜底记 <span class="mono">hintfallback</span>。<br />
-    <b>不记什么</b>　不存 IP、不存 UA、不存问题原文、不存任何能对应到人的东西。uid 是前端随机串。<br />
+    <b>不记什么</b>　不存 IP、不存 UA、不存问题原文、不存任何能对应到人的东西。uid 是前端随机串。
+    计数器里也没有任何一句玩家说过的话 —— <span class="mono">nearmiss</span> 只记次数，不留原句。<br />
     <b>存在哪</b>　Cloudflare KV，键前缀 <span class="mono">st:d:</span>（每日计数）、
     <span class="mono">st:u:</span>（当日 uid，60 天自清）、<span class="mono">st:f:</span>（首次访问）。
     日切计数是「读-改-写」，并发极端情况下会少记，量级上不影响看趋势。

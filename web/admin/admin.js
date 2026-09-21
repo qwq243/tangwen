@@ -218,7 +218,8 @@
 
      两条链路各算各的账（口径见 README「模型调用统计」）：
        判题 = TypeSafe + jev-latest，**每次提问必发一次** —— 所以「判题调用次数」
-              就等于提问数，另记一笔「判题失败」看它有没有在挂（密钥/额度/上游）；
+              就等于提问数，另记一笔「判题失败」看它有没有在挂（密钥/额度/上游），
+              再记一笔「讲对了没结案」看结案判据有没有又在拿语气当判据；
        求灯 = Workers AI 免费额度，按「这一句是谁答的」分开记（day.m），
               链上全挂回兜底的那一档单独算（hintfallback）。
      这些都是接口自己记的（server.py / Worker 的 bump_track），页面只负责摆出来。 */
@@ -239,13 +240,16 @@
     $("mods").innerHTML =
       tile("今日判题调用", today.ask, t.ask, false) +
       tile("判题失败", today.judgefail, t.judgefail, Number(today.judgefail || 0) > 0) +
+      tile("讲对了没结案", today.nearmiss, t.nearmiss, Number(today.nearmiss || 0) > 0) +
       tile("今日求灯调用", today.hint, t.hint, false) +
       tile("求灯兜底", today.hintfallback, t.hintfallback, Number(today.hintfallback || 0) > 0);
 
     $("modNote").innerHTML =
       "判题走 <span class=\"mono\">" + esc(judge || "?") + "</span>（写死的，十档阈值照它量的）；" +
       "提问一次必发一次判题，所以「判题调用」＝提问数 —— 它和「判题失败」对不上的时候，" +
-      "差的就是模型调用没回来的那些。求灯走 Workers AI 的模型链，哪一句是谁答的看下表。";
+      "差的就是模型调用没回来的那些。<b>「讲对了没结案」这个数应当恒为 0</b>：" +
+      "它是结案判据自己的故障灯（机制说对了、却没落结案），涨起来就说明判据又在拿语气当判据。" +
+      "求灯走 Workers AI 的模型链，哪一句是谁答的看下表。";
 
     var total = models.reduce(function (s, r) { return s + Number(r.n || 0); }, 0);
     if (!models.length) {

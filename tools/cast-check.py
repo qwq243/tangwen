@@ -78,7 +78,7 @@ def strip_parens(name: str) -> str:
 def check_parity(srv) -> list[str]:
     """两条链路（server.py / functions/api/[[path]].js）的判题口径必须逐字一致。
 
-    这里不是全量 diff，只钉两件真会出事、而且肉眼最容易漏的：
+    这里不是全量 diff，只钉几件真会出事、而且肉眼最容易漏的：
 
       1. **说明的正文**：Python 那份 host_answer 的每一条文字，都要能在 JS 里原样找到
          —— 只改一边，线上和本地就会对不同的问题给不同的印；
@@ -88,6 +88,9 @@ def check_parity(srv) -> list[str]:
          「猜中」那条线、都不许退回「关键点问齐就结案」。这条是 2026-09-20 用户实报
          （关键点问齐就当场结案，玩家其实没想通）之后加的钉子；跑 tools/judge-check.py
          会带上同一道检查。
+      4. **「讲对了却没结案」那一档**：判定与记账两边都要在。2026-09-21 用户实报
+         （讲完整了却不结案）之后加的：它是结案判据自己的故障灯，一边漏了就等于
+         那条链路又变回静默。
     """
     js_path = ROOT / "functions" / "api" / "[[path]].js"
     src = js_path.read_text(encoding="utf-8")
@@ -134,6 +137,17 @@ def check_parity(srv) -> list[str]:
             errs.append(f"{name} 的 solved 判据里没有「猜中」那条线（SOLVE-RULE）")
         if "found" in line or "every(" in line:
             errs.append(f"{name} 的 solved 又退回关键点判据了（SOLVE-RULE：问齐不等于结案）")
+
+    # 「讲对了却没结案」那一档（2026-09-21 加）：判定与记账两条链路都得到齐。
+    # 它是结案判据自己的故障灯 —— 只改一边，那条路上的静默失灵就又没人看得见了。
+    for name, text, band, bump in (
+        ("server.py", py_src, "near_miss =", 'bump_track("nearmiss"'),
+        ("functions", src, "const nearMiss =", 'bumpTrack(env, "nearmiss"'),
+    ):
+        if band not in text:
+            errs.append(f"{name} 里没有「讲对了却没结案」那一档的判定（2026-09-21 加的）")
+        if bump not in text:
+            errs.append(f"{name} 没把「讲对了却没结案」记成 nearmiss（两条链路都要记）")
 
     def keys_of(text: str, start: str, stop: str) -> list[str]:
         i = text.find(start)

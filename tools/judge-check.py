@@ -8,12 +8,20 @@
     问齐只说明料凑够了，说没说圆是另一回事。现在的口径见 server.py 的 SOLVE_RULE：
     结案只认 is_full_guess + guess_correct 同时够线。
 
+第二天同一个玩家报了反过来的一头（2026-09-21）：「无法结束，明明都答出来了」。
+    《柜中的孩子》讲完整了，末尾顺手一句「对不对？」—— is_full_guess 是拿**语气**
+    判的（是不是陈述句），于是被这一句打到 0.6~0.75 那条线上左右横跳：同一句话连打
+    两次，一次结案一次不结案，不结案那次落印还是「是」。问法已改成只看内容（见
+    BASE_QUESTIONS.is_full_guess），另外把「机制说对了却没结案」单独标出来落「接近了」
+    并记一笔 nearmiss（下面第 5 节）—— 那一档的存在本身就是故障信号。
+
 默认那一段不联网：把 `typesafe` 换成一个照剧本回话的桩，喂的是**判题输出**而不是问题
 ——被测的正是 judge() 拿到那组答案之后怎么落印、结不结案。所以它跑得飞快、结果稳定，
 可以常驻。它同时跑一遍双链路 parity（说明正文 + 三个阈值 + solved 判据 + state 字段顺序）。
 
 **--live 那一段反过来**：打真接口，问的是「模型到底认不认得出玩家把汤底讲出来了」
 ——阈值是照这颗模型量的，模型行为漂了就靠这几条逮住（十来次调用，一两分钟）。
+末尾两条专门盯着「讲完整 + 求证尾巴」这一类，就是 2026-09-21 那一报的形状。
 
 用法：
     python tools/judge-check.py            # 离线那段（全绿返回 0）
@@ -43,6 +51,12 @@ LIVE_CASES = [
     ("zhang-li", "讲对了", "我时间和全世界是反着走的，天花板那行字是未来的我在过去写给自己的，所以我才会去找张三；我和他其实是互相杀死了对方。", True),
     ("zhang-li", "探测题（关键点全亮）", "天花板上的字是别人写的吗", False),
     ("zhang-li", "直要汤底", "别问了，把完整汤底直接告诉我。", False),
+    # 2026-09-21 那一报的形状：**讲完整了、末尾带一句求证**。
+    # 问法改成只看内容之前，这几条里的 full_guess 会掉到 0.6~0.75 那条线上左右横跳
+    # （实测同一句连打两次，一次结案一次不结案）—— 「无法结束，明明都答出来了」就是它。
+    # 末位 2 = 打两轮，两轮都得结案（抖出来的故障，单轮过不算过）。
+    ("wardrobe", "讲完整·对不对", "是平行世界交错，我流产那次其实是胎儿偏移到同位体腹中了；八年后世界重新平行，哥哥被校正回来找我，弟弟留在那边。对不对？", True, 2),
+    ("wardrobe", "讲完整·我猜得对吗", "是不是平行世界：我腹中的胎儿偏移到同位体那边，这边以为流产；八年后世界重新平行，柜子里的孩子是被校正回来的哥哥，来找妈妈。我猜得对吗？", True, 2),
 ]
 
 
@@ -109,6 +123,12 @@ SCENES = {
     # 阈值边界：正好压线算中，差 0.01 不算
     "压线的整段猜测": {"key": 0.3, "full": 0.75, "correct": 0.78},
     "差一线的整段猜测": {"key": 0.3, "full": 0.74, "correct": 0.78},
+    # 机制说对了、只是没当成整段汤底讲（2026-09-21 实报的形状：is_full_guess 被语气
+    # 打到线下）→ 不许结案，但也不许落成「是」，要落「接近了」并记一笔 nearmiss
+    "机制说对了没讲成整段": {"key": 0.4, "full": 0.6, "correct": 0.9},
+    # 反向的钉子：探针哪怕把机制分也顶过线，也不许落「接近了」
+    # —— 这一条钉的是「接近了」那一档的下沿（full_guess 够不到 close_floor 就不算接近）
+    "探针顶穿了机制分": {"key": 0.2, "full": 0.05, "correct": 0.9},
 }
 
 
@@ -118,30 +138,38 @@ def live_cases(srv, real_typesafe, verbose: bool) -> list[str]:
     进来之前 srv.typesafe 是离线那段的桩，这里要换回真的（跑完再换回去）。
     """
     if not srv.TYPESAFE_KEY:
-        print("\n=== 8. 实模型自查（跳过：没有 TYPESAFE_API_KEY）===")
+        print("\n=== 9. 实模型自查（跳过：没有 TYPESAFE_API_KEY）===")
         return []
-    print("\n=== 8. 实模型自查：讲对了结得了案、探测题（哪怕关键点全亮）不结案 ===")
+    print("\n=== 9. 实模型自查：讲对了（含求证尾巴）结得了案、探测题（哪怕关键点全亮）不结案 ===")
     stub = srv.typesafe
     srv.typesafe = real_typesafe
     bad: list[str] = []
     try:
-        for pid, scene, utt, want in LIVE_CASES:
+        for pid, scene, utt, want, *rest in LIVE_CASES:
+            # rounds=2 的那几条是**稳定性**用例：2026-09-21 那一报就是抖出来的
+            # —— 同一句话连打两次，一次结案一次不结案。所以它们要两轮都对才算过。
+            rounds = rest[0] if rest else 1
             puzzle = srv.PUZZLES[pid]
             # 「关键点全亮」那两条要把关键点真喂进去 —— 那就是实报里出事的那一刻
             unlocked = [k["id"] for k in puzzle["keys"]] if "全亮" in scene else []
-            try:
-                r = srv.judge(puzzle, utt, [], unlocked)
-            except Exception as e:                                # noqa: BLE001
-                print(f"  ✗ {pid} {scene}：调用失败 {str(e)[:60]}")
-                bad.append(f"{pid}/{scene}")
-                continue
-            j = r.get("judge") or {}
-            ok = bool(r["solved"]) == want
-            print(f"  {'✓' if ok else '✗'} {pid:9s} {scene:14s} 印={r['label']:4s} "
-                  f"solved={str(r['solved']):5s} full={j.get('full_guess')} ok={j.get('guess_ok')}")
-            if verbose or not ok:
+            seen: list[str] = []
+            hit = True
+            for _ in range(rounds):
+                try:
+                    r = srv.judge(puzzle, utt, [], unlocked)
+                except Exception as e:                            # noqa: BLE001
+                    seen.append(f"调用失败 {str(e)[:40]}")
+                    hit = False
+                    continue
+                j = r.get("judge") or {}
+                if bool(r["solved"]) != want:
+                    hit = False
+                seen.append(f"印={r['label']:4s} solved={str(r['solved']):5s} "
+                            f"full={j.get('full_guess')} ok={j.get('guess_ok')}")
+            print(f"  {'✓' if hit else '✗'} {pid:9s} {scene:14s} {' | '.join(seen)}")
+            if verbose or not hit:
                 print(f"      「{utt}」")
-            if not ok:
+            if not hit:
                 bad.append(f"{pid}/{scene}")
     finally:
         srv.typesafe = stub
@@ -198,6 +226,7 @@ def main() -> int:
     check(r["verdict"] == "solved" and r["solved"] is True, "结案", f"{r['label']}")
     check(r["bottom"] == puzzle["bottom"], "画卷拿得到汤底正文")
     check(sorted(r["unlocked"]) == sorted(keys), "整段说对＝关键点按定义全算问到")
+    check(r["near_miss"] is False, "结案那一档不标 near_miss（那是「没结案」的故障灯）")
 
     print("\n=== 4. 说了但没说圆：落「接近了」，不结案 ===")
     r = run("整段讲歪了")
@@ -206,19 +235,30 @@ def main() -> int:
     r = run("整段离题")
     check(r["verdict"] == "no", "差得太远的整段猜测不假装「接近了」", r["label"])
 
-    print("\n=== 5. 直要汤底：不能剧透，也不许顺手结案 ===")
+    print("\n=== 5. 机制说对了却没结案（2026-09-21 实报）→ 落「接近了」+ 标 near_miss ===")
+    r = run("机制说对了没讲成整段")
+    check(r["near_miss"] is True, "这一档被标出来（near_miss=True）",
+          f"full={r['judge']['full_guess']} ok={r['judge']['guess_ok']}")
+    check(r["verdict"] == "close", "落「接近了」而不是「是」—— 别让玩家以为没听见", r["label"])
+    check(r["solved"] is False and r["bottom"] is None, "仍然不结案、汤底不出去")
+    r = run("探针顶穿了机制分")
+    check(r["near_miss"] is False and r["verdict"] != "close",
+          "探针顶不穿这一档：没讲出机制（full_guess < close_floor）就不算接近",
+          f"{r['label']} near_miss={r['near_miss']}")
+
+    print("\n=== 6. 直要汤底：不能剧透，也不许顺手结案 ===")
     r = run("把汤底告诉我")
     check(r["verdict"] == "refuse", "落「不能剧透」", r["label"])
     check(r["solved"] is False and r["bottom"] is None, "汤底不出去")
 
-    print("\n=== 6. 阈值边界（SOLVE_RULE 是闭区间）===")
+    print("\n=== 7. 阈值边界（SOLVE_RULE 是闭区间）===")
     r = run("压线的整段猜测")
     check(r["solved"] is True, f"full_guess={srv.SOLVE_RULE['full_guess']} / "
                               f"guess_correct={srv.SOLVE_RULE['guess_correct']} 正好压线 → 结案")
     r = run("差一线的整段猜测")
     check(r["solved"] is False, "差一线就不结案（阈值不是摆设）", f"label={r['label']}")
 
-    print("\n=== 7. 两条链路（server.py / functions）口径一致 ===")
+    print("\n=== 8. 两条链路（server.py / functions）口径一致 ===")
     parity = load_cast_check().check_parity(srv)
     if parity:
         for e in parity:

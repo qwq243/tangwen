@@ -53,14 +53,18 @@ import server
 
 def fake_typesafe(state, questions):
     # 问题里带「桩-崩」就当作上游挂了：用来验「判题失败也要记下这一问」
-    if "桩-崩" in str(state.get("player_utterance") or ""):
+    utt = str(state.get("player_utterance") or "")
+    if "桩-崩" in utt:
         raise RuntimeError("stub judge down")
+    # 「桩-讲了没结案」= 机制说对了、只是没当成整段汤底讲（nearmiss 那一档，
+    # 2026-09-21 实报的形状）：is_full_guess 够不到线，guess_correct 够线
+    full, correct = (0.6, 0.9) if "桩-讲了没结案" in utt else (0.96, 0.96)
     answers = {{
         "trying_to_extract": {{"noul": 0.0}},
         # 判成「整段说对了」：结案现在只认这两条线（SOLVE_RULE），
         # is_full_guess >= 0.75 且 guess_correct >= 0.78
-        "is_full_guess": {{"noul": 0.96}},
-        "guess_correct": {{"noul": 0.96}},
+        "is_full_guess": {{"noul": full}},
+        "guess_correct": {{"noul": correct}},
         "host_answer": {{"choice": "no", "confidence": 0.9,
                          "probabilities": {{"no": 0.9, "yes": 0.05}}}},
     }}
@@ -285,6 +289,22 @@ def main() -> int:
         ok("空问题 / 不存在的卷不算提问", st == 400 and stats_now(token)[0].get("ask") == base_today.get("ask", 0) + 2,
            f"HTTP {st}")
 
+        # 8c-2. 讲对了却没结案（2026-09-21 加）：这一档**不该有** —— 它是结案判据自己的
+        #     故障灯（机制说对了、却因为句子被读成了问句而没结案）。所以既要记出来，
+        #     又不许把它算成结案：漏记了就又回到「玩家报了我才知道」。
+        before_nn, _ = stats_now(token)
+        st, nn = jcall("/api/ask", "POST", {"puzzle_id": "jumper", "question": "桩-讲了没结案"})
+        after_nn, _ = stats_now(token)
+        ok("机制说对了却没结案 → 落「接近了」+ 记 nearmiss + 不记 solve",
+           st == 200 and nn.get("verdict") == "close" and nn.get("near_miss") is True
+           and nn.get("solved") is False
+           and after_nn.get("nearmiss") == before_nn.get("nearmiss", 0) + 1
+           and after_nn.get("solve") == before_nn.get("solve", 0)
+           and after_nn.get("ask") == before_nn.get("ask", 0) + 1,
+           json.dumps({"verdict": nn.get("verdict"), "nearmiss": after_nn.get("nearmiss"),
+                       "solve": after_nn.get("solve"), "ask": after_nn.get("ask")},
+                      ensure_ascii=False))
+
         # 8d. 模型调用记账（2026-09-20 加）：求灯按「这一句是谁答的」分开记，
         #     链上全挂回兜底单独一档。以前后台只有 hint 一个数 —— 线上
         #     「求灯永远同一句话」这种静默故障（AI 没绑 / 模型下线）一点痕迹都没有。
@@ -310,7 +330,8 @@ def main() -> int:
            s3.get("judge_model") == "jev-latest", str(s3.get("judge_model")))
         ok("模型表没混进别的计数（totals 的键是固定的那几个）",
            set((s3.get("totals") or {}).keys()) ==
-           {"pv", "uv", "new", "ask", "hint", "solve", "give", "judgefail", "hintfallback"},
+           {"pv", "uv", "new", "ask", "hint", "solve", "give", "judgefail", "hintfallback",
+            "nearmiss"},
            json.dumps(sorted((s3.get("totals") or {}).keys()), ensure_ascii=False))
 
         # 9. 卷宗核对能拿到汤底

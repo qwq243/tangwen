@@ -240,17 +240,25 @@ def typesafe(state: dict, questions: dict) -> tuple[dict, float]:
 
 # 结案口径（SOLVE-RULE）：**结案只认「玩家把汤底说出来了」**，不认「关键点问齐了」。
 #
-# 为什么改（2026-09-20 用户实报）：《柜中的孩子》里玩家一路问下来，最后一问把最后一个
-# 关键点问到了，于是当场结案 —— 可他自己并没有想通（连「平行世界」都没往那儿想）。
-# 关键点问齐只说明**料凑够了**，说没说圆是另一回事。问齐之后玩家接着问就行，
-# 卡住了去求灯；那条路比「替他结案」诚实。
+# 两次实报，两头都修过，别把哪一头修回去：
+#
+#   2026-09-20《柜中的孩子》：玩家一路问下来，最后一问把最后一个关键点问到了，于是当场
+#   结案 —— 可他自己并没有想通（连「平行世界」都没往那儿想）。**关键点问齐只说明料凑够了**，
+#   说没说圆是另一回事。所以 solved 改成只认 is_full_guess + guess_correct 两条线。
+#
+#   2026-09-21（同一个玩家，反过来了）：把汤底**完整讲出来**了，末尾顺手带一句「对不对？」
+#   —— is_full_guess 掉到 0.6~0.75 那条线上左右横跳，于是时而结案时而不结案，不结案时落印
+#   还是「是」，看着就像游戏没听见他说话。根因是那一条问句在拿**语气**当判据（是不是陈述句），
+#   而不是拿**内容**当判据（有没有把机制讲出来）。问法已改成只看内容，见 BASE_QUESTIONS。
+#   实测（tmp/_wording_ab.py，14 句 x 2 轮）：改前 3 条不合预期，改后 0 条 ——
+#   讲完整（含各种求证尾巴）0.96~0.97、探针 0.03~0.05、讲歪了 0.07~0.16。
 #
 # 三个数就是这条口径的全部，`functions/api/[[path]].js` 的 SOLVE_RULE 必须同值
 # —— 改一边会被 tools/cast-check.py 的 parity 当场逮住（跑 tools/judge-check.py 也会带上）。
 SOLVE_RULE = {
     "full_guess": 0.75,     # is_full_guess：这一句是在把汤底讲出来，而不是在问一个点
     "guess_correct": 0.78,  # guess_correct：讲出来的版本抓住了核心机制
-    "close_floor": 0.45,    # 整段猜过但没说到点子上：低于这条线就不假装「接近了」
+    "close_floor": 0.45,    # 「接近了」那一档的下沿：低于这条线就不假装接近
 }
 
 BASE_QUESTIONS = {
@@ -261,8 +269,12 @@ BASE_QUESTIONS = {
     "is_full_guess": {
         "type": "noul",
         "instructions": (
-            "玩家是在把整个汤底 / 核心机制**讲出来**（陈述，不是在问），"
-            "而不是在问一个探测性是非题？自己的推理串成一段话、或一句话点破核心机制都算。"
+            "玩家这一句里有没有把**整个汤底 / 核心机制讲出来**？"
+            "判断**只看内容，不看语气**：把来龙去脉串成一段话说出来就算讲出来了，"
+            "末尾带一句「对吗 / 对不对 / 我猜得对吗」这类求证套话不影响判定，"
+            "通篇都是问句、但机制其实已经完整交代了，也算。"
+            "不算的只有一种：**只问一个点、能用是 / 不是回答**的探针问题 —— "
+            "哪怕它问的正是关键点，也不算讲出汤底。"
         ),
     },
     "guess_correct": {
@@ -418,6 +430,11 @@ def judge(puzzle: dict, utterance: str, history: list, unlocked: list | None = N
     guess_hit = (
         full_guess >= SOLVE_RULE["full_guess"] and guess_ok >= SOLVE_RULE["guess_correct"]
     )
+    # 「讲对了却没结案」= 机制抓住了（guess_ok 够线），这一句却没被当成整段汤底
+    # （full_guess 不够线）。修好问法之后这一档**应该永远是 0**：它一涨就说明结案判据
+    # 又在拿语气 / 措辞当判据（2026-09-21 那一报就是这个形状），账房记一笔 nearmiss。
+    near_miss = (guess_ok >= SOLVE_RULE["guess_correct"] and not guess_hit
+                 and full_guess >= SOLVE_RULE["close_floor"])
     if guess_hit:
         # 整段说对了：关键点按定义全算问到（那排 chips 是进度条，不再决定结案）
         found.update(k["id"] for k in keys)
@@ -441,9 +458,13 @@ def judge(puzzle: dict, utterance: str, history: list, unlocked: list | None = N
         say = "说对了。汤底封卷。"
     else:
         verdict = choice if choice in HOST_LABELS else "unanswerable"
-        # 整段猜过、但没说到点子上：落「接近了」比落「是 / 不是」贴切 ——
-        # 玩家讲的是故事，不是一个是非命题。差得太远（低于 close_floor）就不假装接近。
-        if full_guess >= SOLVE_RULE["full_guess"] and guess_ok >= SOLVE_RULE["close_floor"]:
+        # 「接近了」是两种半成品 —— 都不结案，但让他看见方向对了：
+        #   (1) 机制说对了、只是没当成整段汤底讲（就是上面那一档 near_miss）；
+        #   (2) 整段讲了、但机制没说准。
+        # 两条都要求 full_guess 不低于 close_floor：探针的 full_guess 只有 0.03~0.08，
+        # 哪怕某一问的 guess_ok 蹿上来（实测探针最高 0.75），也落不进这一档。
+        if near_miss or (full_guess >= SOLVE_RULE["full_guess"]
+                         and guess_ok >= SOLVE_RULE["close_floor"]):
             verdict = "close"
         label = HOST_LABELS.get(verdict, HOST_LABELS["unanswerable"])
         say = {
@@ -467,6 +488,7 @@ def judge(puzzle: dict, utterance: str, history: list, unlocked: list | None = N
         "say": say,
         "verdict": verdict,
         "solved": solved,
+        "near_miss": near_miss,
         "unlocked": sorted(found),
         "keys": key_view,
         "latency_ms": round(latency_ms),
@@ -784,9 +806,10 @@ def make_hint(puzzle: dict, history: list, unlocked: list, prev: str = "") -> tu
 #
 # 事件分两条路记，别再混成一条（2026-09-20 那场「后台不动」就是混出来的）：
 #
-#   服务端自己数：ask / hint / solve / give —— 这四件事服务端**当场就知道**
-#     （谁问了、谁求了灯、谁放弃、判题判没判成结案），所以由接口自己记一笔，
-#     见下面 bump_track()，不再经过浏览器。
+#   服务端自己数：ask / hint / solve / give / judgefail / nearmiss —— 这几件事服务端
+#     **当场就知道**（谁问了、谁求了灯、谁放弃、判题判没判成结案、模型挂没挂、
+#     有没有「讲对了却没结案」），所以由接口自己记一笔，见下面 bump_track()，
+#     不再经过浏览器。
 #   客户端上报：只剩 pv（开卷成功）。这件服务端看不见 —— /api/puzzles 带 60 秒缓存，
 #     同一个访客一分钟内再开卷压根打不到服务端，只能由页面自己报。
 #
@@ -795,7 +818,7 @@ def make_hint(puzzle: dict, history: list, unlocked: list, prev: str = "") -> tu
 # 提问/求灯/结案全是 0，偏偏访问量还在涨 —— 看起来像「后台坏了」，其实是
 # 账本抄在一份可能过期的副本上。服务端看得见的事就别外包给前端。
 TRACK_CLIENT_KINDS = ("pv",)          # 客户端还能报的
-BUMP_KINDS = ("ask", "hint", "solve", "give", "judgefail")   # 服务端自己数的
+BUMP_KINDS = ("ask", "hint", "solve", "give", "judgefail", "nearmiss")   # 服务端自己数的
 BUMP_PUZZLE_KINDS = ("ask", "hint", "solve")    # 其中要记到分卷明细的
 TRACK_MAX_EVENTS = 240
 SEEN_TTL = 60 * 24 * 60 * 60
@@ -876,7 +899,7 @@ def apply_track(date: str, events: list, uid: str) -> bool:
 
 
 def bump_track(kind: str, pid: str = "", model: str | None = None) -> None:
-    """接口自己记一笔（ask / hint / solve / give / judgefail）。
+    """接口自己记一笔（ask / hint / solve / give / judgefail / nearmiss）。
 
     日期在这里现算，不接调用方传进来的 —— 服务是常驻的，跨零点那一刻要用当天的。
     出错只打一行日志：埋点坏了不能影响玩，更不能把判题结果吞掉。
@@ -887,6 +910,8 @@ def bump_track(kind: str, pid: str = "", model: str | None = None) -> None:
         线上表现只是「求灯永远同一句话」，不记就查不出来）。
     判题那条**不传**：判题模型是写死的 jev-latest（见 TYPESAFE_MODEL），
     每次提问必发一次判题，所以「判题调用次数」就是 ask 那笔，失败另记 `judgefail`。
+    `nearmiss`（讲对了却没结案）也是判题那条路上记的，同一个道理：它是**判据自己的
+    故障灯**，不该有；有就说明结案又在拿语气当判据，见 SOLVE_RULE 的注释。
     两边合起来才是「模型调用」的账，口径写在 README 的「模型调用统计」一节。"""
     if kind not in BUMP_KINDS:
         return
@@ -974,7 +999,8 @@ def collect_stats(days: int) -> dict:
     # judgefail（判题调用失败）与 hintfallback（求灯退到兜底）跟别的计数一样按天走，
     # 后台「模型调用」那张卡与折线都读它们。day["m"]（按模型的求灯次数）不进 series ——
     # 它是「谁答的」的分解，没有按天的趋势可言，单独聚合给 models。
-    keys = ("pv", "uv", "new", "ask", "hint", "solve", "give", "judgefail", "hintfallback")
+    keys = ("pv", "uv", "new", "ask", "hint", "solve", "give", "judgefail", "hintfallback",
+            "nearmiss")
     series = []
     totals = {k: 0 for k in keys}
     per_puzzle: dict = {}
@@ -1428,6 +1454,10 @@ class Handler(SimpleHTTPRequestHandler):
                 return
             if result.get("solved"):
                 bump_track("solve", pid)
+            elif result.get("near_miss"):
+                # 讲对了却没结案：这一档**不该有**（理由见 SOLVE_RULE 与 judge() 的注释）。
+                # 记它是为了它再出现时后台看得见 —— 不用再靠玩家报「我明明答出来了」。
+                bump_track("nearmiss", pid)
             self._json(200, result)
             return
 
