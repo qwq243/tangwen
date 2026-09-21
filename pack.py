@@ -28,6 +28,8 @@ ENTRY = [
     "puzzles.json",
     "requirements.txt",
     "README.md",
+    # 许可不是运行期的东西，但发布的副本里没有它就说不过去了
+    "LICENSE",
     "start.cmd",
     "web/index.html",
     "web/styles.css",
